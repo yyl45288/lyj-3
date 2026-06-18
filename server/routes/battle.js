@@ -357,22 +357,20 @@ function handleVictory(character, activeBattle, monster) {
   let newHp = character.hp;
   let leveledUp = false;
 
-  const expForLevel = newLevel * 100;
-  if (newExp >= expForLevel) {
-    const realmIndex = getRealmIndex(character.realm);
-    const nextRealm = getRealmByIndex(realmIndex + 1);
-    const maxLevel = nextRealm ? nextRealm.levelReq - 1 : 999;
+  const realmIndex = getRealmIndex(character.realm);
+  const nextRealm = getRealmByIndex(realmIndex + 1);
+  const maxLevel = nextRealm ? nextRealm.levelReq : 999;
 
-    if (newLevel < maxLevel) {
-      newLevel += 1;
-      newMaxHp += 10;
-      newMaxMp += 5;
-      newHp = newMaxHp;
-      leveledUp = true;
-      newExp = newExp - expForLevel;
-    } else {
-      newExp = expForLevel - 1;
-    }
+  const expForLevel = newLevel * 100;
+  if (newExp >= expForLevel && newLevel < maxLevel) {
+    newLevel += 1;
+    newMaxHp += 10;
+    newMaxMp += 5;
+    newHp = newMaxHp;
+    leveledUp = true;
+    newExp = newExp - expForLevel;
+  } else if (newExp >= expForLevel && newLevel >= maxLevel) {
+    newExp = expForLevel - 1;
   }
 
   db.prepare(`

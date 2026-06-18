@@ -102,7 +102,7 @@ export default function Cultivate() {
             </div>
             {tribulationInfo?.nextRealm && (
               <div className="next-realm-info">
-                下一境界: {tribulationInfo.nextRealm.name} (需要 {tribulationInfo.nextRealm.levelReq} 级 / {tribulationInfo.nextRealm.expReq} 经验)
+                下一境界: {tribulationInfo.nextRealm.name} (需要 {tribulationInfo.nextRealm.levelReq} 级)
               </div>
             )}
           </div>
@@ -141,8 +141,6 @@ export default function Cultivate() {
                   <div style={{ color: 'var(--color-text-dim)', fontSize: '0.85rem', marginTop: '0.5rem' }}>
                     {character.level < tribulationInfo.nextRealm.levelReq
                       ? `需要等级 ${tribulationInfo.nextRealm.levelReq}`
-                      : character.exp < tribulationInfo.nextRealm.expReq
-                      ? `需要经验 ${tribulationInfo.nextRealm.expReq}`
                       : character.hp < character.max_hp
                       ? '需要满血状态'
                       : ''}

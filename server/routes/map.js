@@ -117,30 +117,36 @@ router.post('/explore/:mapId', auth, (req, res) => {
     const newExp = character.exp + baseExp;
 
     const expForLevel = character.level * 100;
-    const realmIndex = db.prepare('SELECT realm FROM characters WHERE id = ?').get(character.id);
     const { getRealmIndex, getRealmByIndex } = require('../gameData');
-    const currentRealmIdx = getRealmIndex(realmIndex.realm);
-    const nextRealm = getRealmByIndex(currentRealmIdx + 1);
-    const maxLevel = nextRealm ? nextRealm.levelReq - 1 : 999;
+    const realmIndex = getRealmIndex(character.realm);
+    const nextRealm = getRealmByIndex(realmIndex + 1);
+    const maxLevel = nextRealm ? nextRealm.levelReq : 999;
 
     let finalExp = newExp;
+    let finalLevel = character.level;
     let overflowExp = 0;
-    if (character.level >= maxLevel && newExp >= expForLevel) {
+
+    if (newExp >= expForLevel && character.level < maxLevel) {
+      finalLevel = character.level + 1;
+      finalExp = newExp - expForLevel;
+    } else if (character.level >= maxLevel && newExp >= expForLevel) {
       overflowExp = newExp - expForLevel + 1;
       finalExp = expForLevel - 1;
     }
 
-    db.prepare('UPDATE characters SET exp = ? WHERE id = ?').run(finalExp, character.id);
+    db.prepare('UPDATE characters SET exp = ?, level = ? WHERE id = ?').run(finalExp, finalLevel, character.id);
 
     db.prepare('INSERT INTO exploration_logs (character_id, map_id, action, result) VALUES (?, ?, ?, ?)')
       .run(character.id, map.id, 'explore_exp', JSON.stringify({ exp: baseExp }));
 
     result = {
       type: 'explore',
-      message: `闲逛了一会儿，获得了${baseExp}点经验${overflowExp > 0 ? `（溢出${overflowExp}点经验，请突破境界）` : ''}`,
+      message: `闲逛了一会儿，获得了${baseExp}点经验${overflowExp > 0 ? `（溢出${overflowExp}点经验，请渡天劫突破境界）` : finalLevel > character.level ? `，等级提升至${finalLevel}级！` : ''}`,
       expGained: baseExp,
       overflowExp,
-      newExp: finalExp
+      newExp: finalExp,
+      newLevel: finalLevel,
+      leveledUp: finalLevel > character.level
     };
   }
 

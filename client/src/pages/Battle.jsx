@@ -22,7 +22,7 @@ export default function Battle() {
       setBattle(battleData.battle)
       setCharacter(charData.character || charData)
       const captureInv = invData.inventory?.filter(
-        (inv) => inv.item?.effect?.type === 'capture_bonus' && inv.quantity > 0
+        (inv) => inv.effect?.type === 'capture_bonus' && inv.quantity > 0
       ) || []
       setCaptureItems(captureInv)
       if (!battleData.battle) {
@@ -235,12 +235,12 @@ export default function Battle() {
                   <button
                     key={item.id}
                     className="capture-item"
-                    onClick={() => handleCapture(item.item_id)}
+                    onClick={() => handleCapture(item.id)}
                     disabled={loading}
                   >
-                    <div className="item-name">{item.item?.name}</div>
+                    <div className="item-name">{item.name}</div>
                     <div className="item-desc">
-                      +{item.item?.effect?.value}% 成功率 × {item.quantity}
+                      +{item.effect?.value}% 成功率 × {item.quantity}
                     </div>
                   </button>
                 ))}

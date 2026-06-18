@@ -1,7 +1,7 @@
 const express = require('express');
 const db = require('../db');
 const { auth } = require('../middleware');
-const { REALMS, getRealmByIndex, getRealmIndex, getItemById } = require('../gameData');
+const { REALMS, getRealmByIndex, getRealmIndex, getItemById, ITEMS } = require('../gameData');
 
 const router = express.Router();
 
@@ -70,10 +70,9 @@ router.post('/', auth, (req, res) => {
     const result = insertChar.run(req.user.id, name.trim());
     const charId = result.lastInsertRowid;
 
-    insertInventory.run(charId, 1, 5);
-    insertInventory.run(charId, 3, 3);
-    insertInventory.run(charId, 5, 1);
-    insertInventory.run(charId, 101, 1);
+    for (const item of ITEMS) {
+      insertInventory.run(charId, item.id, 1);
+    }
 
     return charId;
   });
@@ -98,22 +97,31 @@ router.post('/cultivate', auth, (req, res) => {
   const randomMultiplier = 0.8 + Math.random() * 0.4;
   const expGained = Math.floor(baseExp * comprehensionMultiplier * randomMultiplier);
 
-  const newExp = character.exp + expGained;
+  const realmIndex = getRealmIndex(character.realm);
+  const nextRealm = getRealmByIndex(realmIndex + 1);
+  const maxLevel = nextRealm ? nextRealm.levelReq : 999;
+
+  let newExp = character.exp + expGained;
   let leveledUp = false;
   let newLevel = character.level;
   let newMaxHp = character.max_hp;
   let newMaxMp = character.max_mp;
   let newHp = character.hp;
   let newMp = character.mp;
+  let overflowExp = 0;
 
   const expForLevel = newLevel * 100;
-  if (newExp >= expForLevel) {
+  if (newExp >= expForLevel && newLevel < maxLevel) {
     newLevel += 1;
     newMaxHp += 10;
     newMaxMp += 5;
     newHp = newMaxHp;
     newMp = newMaxMp;
     leveledUp = true;
+    newExp = newExp - expForLevel;
+  } else if (newExp >= expForLevel && newLevel >= maxLevel) {
+    overflowExp = newExp - expForLevel + 1;
+    newExp = expForLevel - 1;
   }
 
   const cultivateCount = character.cultivate_count + 1;
@@ -124,22 +132,29 @@ router.post('/cultivate', auth, (req, res) => {
 
   updateActiveQuestProgress(character.id, 'cultivate', 1);
 
-  const realmIndex = getRealmIndex(character.realm);
-  const nextRealm = getRealmByIndex(realmIndex + 1);
-  let canBreakthrough = false;
-  if (nextRealm && newLevel >= nextRealm.levelReq && newExp >= nextRealm.expReq) {
-    canBreakthrough = true;
+  let canTribulate = false;
+  if (nextRealm && newLevel >= nextRealm.levelReq) {
+    canTribulate = true;
+  }
+
+  let message = `修炼获得${expGained}点经验`;
+  if (leveledUp) {
+    message = `修炼获得${expGained}点经验，等级提升至${newLevel}级！`;
+  } else if (overflowExp > 0) {
+    message = `修炼获得${expGained}点经验（溢出${overflowExp}点经验，请渡天劫突破境界）`;
   }
 
   res.json({
-    message: leveledUp ? `修炼获得${expGained}点经验，等级提升至${newLevel}级！` : `修炼获得${expGained}点经验`,
+    message,
     expGained,
     expGain: expGained,
     newExp,
     leveledUp,
     levelUp: leveledUp,
     newLevel,
-    canBreakthrough
+    overflowExp,
+    canTribulate,
+    canBreakthrough: canTribulate
   });
 });
 
@@ -158,10 +173,6 @@ router.post('/breakthrough', auth, (req, res) => {
 
   if (character.level < nextRealm.levelReq) {
     return res.status(400).json({ error: `等级不足，需要${nextRealm.levelReq}级` });
-  }
-
-  if (character.exp < nextRealm.expReq) {
-    return res.status(400).json({ error: `修为不足，需要${nextRealm.expReq}点经验` });
   }
 
   const successRate = Math.min(0.6 + character.comprehension * 0.02, 0.95);
@@ -225,12 +236,9 @@ router.post('/tribulation', auth, (req, res) => {
     return res.status(400).json({ error: '已达最高境界' });
   }
 
-  if (character.level < nextRealm.levelReq) {
-    return res.status(400).json({ error: `等级不足，需要${nextRealm.levelReq}级` });
-  }
-
-  if (character.exp < nextRealm.expReq) {
-    return res.status(400).json({ error: `修为不足，需要${nextRealm.expReq}点经验` });
+  const maxLevel = nextRealm.levelReq;
+  if (character.level < maxLevel) {
+    return res.status(400).json({ error: `等级不足，需要${maxLevel}级才能渡天劫` });
   }
 
   if (character.hp < character.max_hp) {
@@ -386,8 +394,11 @@ router.get('/tribulation/info', auth, (req, res) => {
   const comprehensionBonus = character.comprehension * 2;
   const minSuccessRate = baseSuccessRate + comprehensionBonus;
 
+  const maxLevel = nextRealm.levelReq;
+  const canTribulate = character.level >= maxLevel && character.hp >= character.max_hp;
+
   res.json({
-    canTribulate: character.level >= nextRealm.levelReq && character.exp >= nextRealm.expReq && character.hp >= character.max_hp,
+    canTribulate,
     currentRealm: character.realm,
     nextRealm: {
       name: nextRealm.name,
