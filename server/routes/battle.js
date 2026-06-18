@@ -118,6 +118,8 @@ router.post('/attack', auth, (req, res) => {
   }
 
   const updatedCharacter = db.prepare('SELECT * FROM characters WHERE user_id = ?').get(req.user.id);
+  const activePet = activeBattle.pet_id ? db.prepare('SELECT * FROM pets WHERE id = ?').get(activeBattle.pet_id) : null;
+  const petData = activePet ? { ...activePet, petInfo: getPetById(activePet.pet_id) } : null;
 
   res.json({
     logs,
@@ -129,8 +131,11 @@ router.post('/attack', auth, (req, res) => {
         ...monster,
         currentHp: activeBattle.monster_hp
       },
+      pet: petData,
       playerHp: activeBattle.player_hp,
-      playerMaxHp: activeBattle.player_max_hp
+      playerMaxHp: activeBattle.player_max_hp,
+      petHp: activeBattle.pet_hp,
+      petMaxHp: activeBattle.pet_max_hp
     },
     character: {
       ...updatedCharacter,
@@ -224,12 +229,25 @@ router.post('/capture', auth, (req, res) => {
   } else {
     logs.push(`捕捉失败！(${roll.toFixed(1)}% > ${totalRate.toFixed(1)}%)`);
 
-    const monsterDamage = Math.max(1, monster.attack - character.defense + Math.floor(Math.random() * 5));
-    activeBattle.player_hp -= monsterDamage;
-    logs.push(`${monster.name}趁机攻击，对你造成了${monsterDamage}点伤害！`);
-
     let battleEnded = false;
     let battleResult = null;
+
+    if (activeBattle.pet_id && activeBattle.pet_hp > 0 && Math.random() < 0.5) {
+      const pet = db.prepare('SELECT * FROM pets WHERE id = ?').get(activeBattle.pet_id);
+      const petInfo = getPetById(pet.pet_id);
+      const monsterToPetDamage = Math.max(1, monster.attack - pet.defense + Math.floor(Math.random() * 5));
+      activeBattle.pet_hp -= monsterToPetDamage;
+      logs.push(`${monster.name}趁机攻击${pet.name}(${petInfo.name})，造成了${monsterToPetDamage}点伤害！`);
+      if (activeBattle.pet_hp <= 0) {
+        activeBattle.pet_hp = 0;
+        logs.push(`${pet.name}失去了战斗能力！`);
+      }
+    } else {
+      const monsterDamage = Math.max(1, monster.attack - character.defense + Math.floor(Math.random() * 5));
+      activeBattle.player_hp -= monsterDamage;
+      logs.push(`${monster.name}趁机攻击，对你造成了${monsterDamage}点伤害！`);
+    }
+
     if (activeBattle.player_hp <= 0) {
       battleEnded = true;
       battleResult = handleDefeat(character, activeBattle, monster);
@@ -239,12 +257,14 @@ router.post('/capture', auth, (req, res) => {
       activeBattle.turn += 1;
       db.prepare(`
         UPDATE active_battles 
-        SET monster_hp = ?, player_hp = ?, turn = ?
+        SET monster_hp = ?, player_hp = ?, pet_hp = ?, turn = ?
         WHERE character_id = ?
-      `).run(activeBattle.monster_hp, activeBattle.player_hp, activeBattle.turn, character.id);
+      `).run(activeBattle.monster_hp, activeBattle.player_hp, activeBattle.pet_hp, activeBattle.turn, character.id);
     }
 
     const updatedCharacter = db.prepare('SELECT * FROM characters WHERE user_id = ?').get(req.user.id);
+    const activePet = activeBattle.pet_id ? db.prepare('SELECT * FROM pets WHERE id = ?').get(activeBattle.pet_id) : null;
+    const petData = activePet ? { ...activePet, petInfo: getPetById(activePet.pet_id) } : null;
 
     res.json({
       logs,
@@ -256,8 +276,11 @@ router.post('/capture', auth, (req, res) => {
           ...monster,
           currentHp: activeBattle.monster_hp
         },
+        pet: petData,
         playerHp: activeBattle.player_hp,
-        playerMaxHp: activeBattle.player_max_hp
+        playerMaxHp: activeBattle.player_max_hp,
+        petHp: activeBattle.pet_hp,
+        petMaxHp: activeBattle.pet_max_hp
       },
       character: {
         ...updatedCharacter,
@@ -303,12 +326,25 @@ router.post('/flee', auth, (req, res) => {
   } else {
     logs.push(`逃跑失败！(${roll.toFixed(1)}% > ${fleeChance.toFixed(1)}%)`);
 
-    const monsterDamage = Math.max(1, monster.attack - character.defense + Math.floor(Math.random() * 5));
-    activeBattle.player_hp -= monsterDamage;
-    logs.push(`${monster.name}追上了你，造成了${monsterDamage}点伤害！`);
-
     let battleEnded = false;
     let battleResult = null;
+
+    if (activeBattle.pet_id && activeBattle.pet_hp > 0 && Math.random() < 0.5) {
+      const pet = db.prepare('SELECT * FROM pets WHERE id = ?').get(activeBattle.pet_id);
+      const petInfo = getPetById(pet.pet_id);
+      const monsterToPetDamage = Math.max(1, monster.attack - pet.defense + Math.floor(Math.random() * 5));
+      activeBattle.pet_hp -= monsterToPetDamage;
+      logs.push(`${monster.name}追上了${pet.name}(${petInfo.name})，造成了${monsterToPetDamage}点伤害！`);
+      if (activeBattle.pet_hp <= 0) {
+        activeBattle.pet_hp = 0;
+        logs.push(`${pet.name}失去了战斗能力！`);
+      }
+    } else {
+      const monsterDamage = Math.max(1, monster.attack - character.defense + Math.floor(Math.random() * 5));
+      activeBattle.player_hp -= monsterDamage;
+      logs.push(`${monster.name}追上了你，造成了${monsterDamage}点伤害！`);
+    }
+
     if (activeBattle.player_hp <= 0) {
       battleEnded = true;
       battleResult = handleDefeat(character, activeBattle, monster);
@@ -318,12 +354,14 @@ router.post('/flee', auth, (req, res) => {
       activeBattle.turn += 1;
       db.prepare(`
         UPDATE active_battles 
-        SET player_hp = ?, turn = ?
+        SET player_hp = ?, pet_hp = ?, turn = ?
         WHERE character_id = ?
-      `).run(activeBattle.player_hp, activeBattle.turn, character.id);
+      `).run(activeBattle.player_hp, activeBattle.pet_hp, activeBattle.turn, character.id);
     }
 
     const updatedCharacter = db.prepare('SELECT * FROM characters WHERE user_id = ?').get(req.user.id);
+    const activePet = activeBattle.pet_id ? db.prepare('SELECT * FROM pets WHERE id = ?').get(activeBattle.pet_id) : null;
+    const petData = activePet ? { ...activePet, petInfo: getPetById(activePet.pet_id) } : null;
 
     res.json({
       logs,
@@ -335,8 +373,11 @@ router.post('/flee', auth, (req, res) => {
           ...monster,
           currentHp: activeBattle.monster_hp
         },
+        pet: petData,
         playerHp: activeBattle.player_hp,
-        playerMaxHp: activeBattle.player_max_hp
+        playerMaxHp: activeBattle.player_max_hp,
+        petHp: activeBattle.pet_hp,
+        petMaxHp: activeBattle.pet_max_hp
       },
       character: {
         ...updatedCharacter,

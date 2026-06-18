@@ -12,17 +12,17 @@ const REALMS = [
 
 const MAPS = [
   { id: 1, name: '青冥山', description: '入门修士常去的修炼之地，灵气较为稀薄', levelReq: 1, 
-    monsters: [1, 2, 3], dropItems: [1, 3, 601, 602], encounterRate: 0.4, dropRate: 0.3 },
+    monsters: [1, 2, 3], dropItems: [1, 3, 601, 602, 101, 201, 301, 401, 501], encounterRate: 0.4, dropRate: 0.3 },
   { id: 2, name: '黑风谷', description: '常有妖兽出没的危险峡谷', levelReq: 10,
-    monsters: [4, 5, 6], dropItems: [2, 4, 602, 603], encounterRate: 0.5, dropRate: 0.35 },
+    monsters: [4, 5, 6], dropItems: [2, 4, 602, 603, 102, 202, 302, 402, 502], encounterRate: 0.5, dropRate: 0.35 },
   { id: 3, name: '万妖林', description: '广袤的妖兽森林，危机四伏', levelReq: 20,
-    monsters: [7, 8, 9], dropItems: [5, 6, 603, 604], encounterRate: 0.55, dropRate: 0.4 },
+    monsters: [7, 8, 9], dropItems: [5, 6, 603, 604, 103, 203, 303, 403, 503], encounterRate: 0.55, dropRate: 0.4 },
   { id: 4, name: '毒龙沼泽', description: '瘴气弥漫的沼泽地，藏有剧毒妖兽', levelReq: 30,
-    monsters: [10, 11, 12], dropItems: [603, 604, 701], encounterRate: 0.6, dropRate: 0.4 },
+    monsters: [10, 11, 12], dropItems: [2, 5, 603, 604, 701, 103, 203, 303, 403, 503], encounterRate: 0.6, dropRate: 0.4 },
   { id: 5, name: '极寒冰原', description: '终年积雪的冰原，适合高阶修士历练', levelReq: 45,
-    monsters: [13, 14, 15], dropItems: [604, 605, 701, 702], encounterRate: 0.65, dropRate: 0.45 },
+    monsters: [13, 14, 15], dropItems: [6, 604, 605, 701, 702, 104, 204, 304, 404, 504], encounterRate: 0.65, dropRate: 0.45 },
   { id: 6, name: '天魔窟', description: '上古魔族遗迹，蕴含强大的魔族气息', levelReq: 60,
-    monsters: [16, 17, 18], dropItems: [605, 702, 703], encounterRate: 0.7, dropRate: 0.5 }
+    monsters: [16, 17, 18], dropItems: [605, 702, 703, 105, 205, 305, 405, 505], encounterRate: 0.7, dropRate: 0.5 }
 ];
 
 const MONSTERS = [
