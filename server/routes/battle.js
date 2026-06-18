@@ -199,6 +199,12 @@ router.post('/capture', auth, (req, res) => {
         VALUES (?, ?, ?, 1, 0, ?, ?, ?, ?, ?)
       `).run(character.id, monster.petId, petName, stats.maxHp, stats.maxHp, stats.attack, stats.defense, stats.speed);
 
+      db.prepare('UPDATE characters SET hp = ? WHERE id = ?').run(Math.max(1, activeBattle.player_hp), character.id);
+
+      if (activeBattle.pet_id) {
+        db.prepare('UPDATE pets SET hp = ? WHERE id = ?').run(Math.max(1, activeBattle.pet_hp), activeBattle.pet_id);
+      }
+
       logs.push(`捕捉成功！${monster.name}成为了你的宠物！`);
 
       db.prepare(`
@@ -310,6 +316,13 @@ router.post('/flee', auth, (req, res) => {
 
   if (success) {
     logs.push(`逃跑成功！(${roll.toFixed(1)}% < ${fleeChance.toFixed(1)}%)`);
+
+    db.prepare('UPDATE characters SET hp = ? WHERE id = ?').run(Math.max(1, activeBattle.player_hp), character.id);
+
+    if (activeBattle.pet_id) {
+      db.prepare('UPDATE pets SET hp = ? WHERE id = ?').run(Math.max(1, activeBattle.pet_hp), activeBattle.pet_id);
+    }
+
     db.prepare('DELETE FROM active_battles WHERE character_id = ?').run(character.id);
 
     db.prepare(`
@@ -395,7 +408,7 @@ function handleVictory(character, activeBattle, monster) {
   let newLevel = character.level;
   let newMaxHp = character.max_hp;
   let newMaxMp = character.max_mp;
-  let newHp = character.hp;
+  let newHp = Math.max(1, activeBattle.player_hp);
   let leveledUp = false;
 
   const realmIndex = getRealmIndex(character.realm);
@@ -424,6 +437,7 @@ function handleVictory(character, activeBattle, monster) {
       const petExpGained = Math.floor(expGained * 0.5);
       let petNewExp = pet.exp + petExpGained;
       let petNewLevel = pet.level;
+      let petNewHp = Math.max(1, activeBattle.pet_hp);
       const petExpForLevel = petNewLevel * 80;
 
       if (petNewExp >= petExpForLevel) {
@@ -434,7 +448,7 @@ function handleVictory(character, activeBattle, monster) {
           UPDATE pets SET level = ?, exp = ?, max_hp = ?, hp = max_hp, attack = ?, defense = ?, speed = ? WHERE id = ?
         `).run(petNewLevel, petNewExp, petStats.maxHp, petStats.attack, petStats.defense, petStats.speed, pet.id);
       } else {
-        db.prepare('UPDATE pets SET exp = ?, hp = ? WHERE id = ?').run(petNewExp, Math.min(pet.hp, pet.max_hp), pet.id);
+        db.prepare('UPDATE pets SET exp = ?, hp = ? WHERE id = ?').run(petNewExp, Math.min(petNewHp, pet.max_hp), pet.id);
       }
     }
   }
@@ -469,6 +483,14 @@ function handleDefeat(character, activeBattle, monster) {
   db.prepare(`
     UPDATE characters SET exp = ?, gold = ?, hp = ? WHERE id = ?
   `).run(newExp, newGold, newHp, character.id);
+
+  if (activeBattle.pet_id) {
+    const pet = db.prepare('SELECT * FROM pets WHERE id = ?').get(activeBattle.pet_id);
+    if (pet) {
+      const petNewHp = Math.floor(pet.max_hp * 0.3);
+      db.prepare('UPDATE pets SET hp = ? WHERE id = ?').run(petNewHp, pet.id);
+    }
+  }
 
   db.prepare(`
     INSERT INTO battle_logs (character_id, monster_id, result, exp_gained, gold_gained)

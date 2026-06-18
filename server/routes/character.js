@@ -193,6 +193,11 @@ router.post('/breakthrough', auth, (req, res) => {
       UPDATE characters SET realm = ?, max_hp = ?, max_mp = ?, hp = ?, mp = ?, attack = ?, defense = ?, speed = ? WHERE id = ?
     `).run(newRealm, newMaxHp, newMaxMp, newHp, newMp, newAttack, newDefense, newSpeed, character.id);
 
+    const pets = db.prepare('SELECT * FROM pets WHERE character_id = ?').all(character.id);
+    for (const pet of pets) {
+      db.prepare('UPDATE pets SET hp = max_hp WHERE id = ?').run(pet.id);
+    }
+
     updateActiveQuestProgress(character.id, 'breakthrough', 1);
 
     res.json({
@@ -294,6 +299,11 @@ router.post('/tribulation', auth, (req, res) => {
     db.prepare(`
       UPDATE characters SET realm = ?, exp = ?, max_hp = ?, max_mp = ?, hp = ?, mp = ?, attack = ?, defense = ?, speed = ? WHERE id = ?
     `).run(newRealm, newExp, newMaxHp, newMaxMp, newHp, newMp, newAttack, newDefense, newSpeed, character.id);
+
+    const pets = db.prepare('SELECT * FROM pets WHERE character_id = ?').all(character.id);
+    for (const pet of pets) {
+      db.prepare('UPDATE pets SET hp = max_hp WHERE id = ?').run(pet.id);
+    }
 
     updateActiveQuestProgress(character.id, 'breakthrough', 1);
 
