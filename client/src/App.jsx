@@ -11,6 +11,9 @@ import Cultivate from './pages/Cultivate'
 import Equipment from './pages/Equipment'
 import Inventory from './pages/Inventory'
 import Quest from './pages/Quest'
+import Map from './pages/Map'
+import Battle from './pages/Battle'
+import Pet from './pages/Pet'
 
 function AuthGuard({ children }) {
   const { user, loading } = useAuth()
@@ -59,6 +62,8 @@ function GameLayout() {
           <NavLink to="/" end>首页</NavLink>
           <NavLink to="/character">角色</NavLink>
           <NavLink to="/cultivate">修炼</NavLink>
+          <NavLink to="/maps">探索</NavLink>
+          <NavLink to="/pets">宠物</NavLink>
           <NavLink to="/equipment">装备</NavLink>
           <NavLink to="/inventory">背包</NavLink>
           <NavLink to="/quests">任务</NavLink>
@@ -99,6 +104,9 @@ function AppRoutes() {
         <Route path="/" element={<GameHome />} />
         <Route path="/character" element={<Character />} />
         <Route path="/cultivate" element={<Cultivate />} />
+        <Route path="/maps" element={<Map />} />
+        <Route path="/battle" element={<Battle />} />
+        <Route path="/pets" element={<Pet />} />
         <Route path="/equipment" element={<Equipment />} />
         <Route path="/inventory" element={<Inventory />} />
         <Route path="/quests" element={<Quest />} />

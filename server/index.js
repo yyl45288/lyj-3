@@ -5,6 +5,9 @@ const authRoutes = require('./routes/auth');
 const characterRoutes = require('./routes/character');
 const equipmentRoutes = require('./routes/equipment');
 const questRoutes = require('./routes/quest');
+const mapRoutes = require('./routes/map');
+const battleRoutes = require('./routes/battle');
+const petRoutes = require('./routes/pet');
 
 const app = express();
 const PORT = 3001;
@@ -16,6 +19,9 @@ app.use('/api/auth', authRoutes);
 app.use('/api/character', characterRoutes);
 app.use('/api/equipment', equipmentRoutes);
 app.use('/api/quests', questRoutes);
+app.use('/api/maps', mapRoutes);
+app.use('/api/battle', battleRoutes);
+app.use('/api/pets', petRoutes);
 
 app.use((err, req, res, next) => {
   console.error(err.stack);

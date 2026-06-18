@@ -56,6 +56,61 @@ db.exec(`
     completed_at TEXT,
     FOREIGN KEY (character_id) REFERENCES characters(id) ON DELETE CASCADE
   );
+
+  CREATE TABLE IF NOT EXISTS pets (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    character_id INTEGER NOT NULL,
+    pet_id INTEGER NOT NULL,
+    name TEXT NOT NULL,
+    level INTEGER DEFAULT 1,
+    exp INTEGER DEFAULT 0,
+    hp INTEGER NOT NULL,
+    max_hp INTEGER NOT NULL,
+    attack INTEGER NOT NULL,
+    defense INTEGER NOT NULL,
+    speed INTEGER NOT NULL,
+    active INTEGER DEFAULT 0,
+    created_at TEXT DEFAULT (datetime('now')),
+    FOREIGN KEY (character_id) REFERENCES characters(id) ON DELETE CASCADE
+  );
+
+  CREATE TABLE IF NOT EXISTS battle_logs (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    character_id INTEGER NOT NULL,
+    monster_id INTEGER NOT NULL,
+    result TEXT NOT NULL,
+    exp_gained INTEGER DEFAULT 0,
+    gold_gained INTEGER DEFAULT 0,
+    pet_caught INTEGER DEFAULT 0,
+    created_at TEXT DEFAULT (datetime('now')),
+    FOREIGN KEY (character_id) REFERENCES characters(id) ON DELETE CASCADE
+  );
+
+  CREATE TABLE IF NOT EXISTS exploration_logs (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    character_id INTEGER NOT NULL,
+    map_id INTEGER NOT NULL,
+    action TEXT NOT NULL,
+    result TEXT,
+    created_at TEXT DEFAULT (datetime('now')),
+    FOREIGN KEY (character_id) REFERENCES characters(id) ON DELETE CASCADE
+  );
+
+  CREATE TABLE IF NOT EXISTS active_battles (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    character_id INTEGER NOT NULL UNIQUE,
+    monster_id INTEGER NOT NULL,
+    monster_hp INTEGER NOT NULL,
+    monster_max_hp INTEGER NOT NULL,
+    player_hp INTEGER NOT NULL,
+    player_max_hp INTEGER NOT NULL,
+    pet_id INTEGER,
+    pet_hp INTEGER,
+    pet_max_hp INTEGER,
+    turn INTEGER DEFAULT 1,
+    created_at TEXT DEFAULT (datetime('now')),
+    FOREIGN KEY (character_id) REFERENCES characters(id) ON DELETE CASCADE
+  );
 `);
 
 function seedData() {
@@ -135,6 +190,32 @@ function seedData() {
     });
 
     insertMany(QUESTS);
+  }
+
+  const existingItems = db.prepare('SELECT id FROM items').all().map(i => i.id);
+  const newItems = ITEMS.filter(item => !existingItems.includes(item.id));
+  if (newItems.length > 0) {
+    const insertItem = db.prepare(`
+      INSERT OR IGNORE INTO items (id, name, type, sub_type, quality, slot, description, effect, stats, price)
+      VALUES (@id, @name, @type, @subType, @quality, @slot, @description, @effect, @stats, @price)
+    `);
+    const insertMany = db.transaction((items) => {
+      for (const item of items) {
+        insertItem.run({
+          id: item.id,
+          name: item.name,
+          type: item.type,
+          subType: item.subType || null,
+          quality: item.quality || null,
+          slot: item.slot || null,
+          description: item.description,
+          effect: item.effect ? JSON.stringify(item.effect) : null,
+          stats: item.stats ? JSON.stringify(item.stats) : null,
+          price: item.price || 0
+        });
+      }
+    });
+    insertMany(newItems);
   }
 }
 

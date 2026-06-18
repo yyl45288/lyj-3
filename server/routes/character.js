@@ -211,6 +211,205 @@ router.post('/breakthrough', auth, (req, res) => {
   }
 });
 
+router.post('/tribulation', auth, (req, res) => {
+  const { itemId } = req.body;
+  const character = db.prepare('SELECT * FROM characters WHERE user_id = ?').get(req.user.id);
+  if (!character) {
+    return res.status(404).json({ error: '角色不存在' });
+  }
+
+  const realmIndex = getRealmIndex(character.realm);
+  const nextRealm = getRealmByIndex(realmIndex + 1);
+
+  if (!nextRealm) {
+    return res.status(400).json({ error: '已达最高境界' });
+  }
+
+  if (character.level < nextRealm.levelReq) {
+    return res.status(400).json({ error: `等级不足，需要${nextRealm.levelReq}级` });
+  }
+
+  if (character.exp < nextRealm.expReq) {
+    return res.status(400).json({ error: `修为不足，需要${nextRealm.expReq}点经验` });
+  }
+
+  if (character.hp < character.max_hp) {
+    return res.status(400).json({ error: '请先恢复生命值再渡天劫' });
+  }
+
+  let itemBonus = 0;
+  let saveOnFail = false;
+  let usedItem = null;
+
+  if (itemId) {
+    const tribItem = db.prepare(`
+      SELECT inv.*, items.effect FROM inventory inv
+      JOIN items ON inv.item_id = items.id
+      WHERE inv.character_id = ? AND inv.item_id = ? AND inv.equipped = 0 AND inv.quantity > 0
+    `).get(character.id, itemId);
+
+    if (!tribItem) {
+      return res.status(400).json({ error: '没有该渡劫道具' });
+    }
+
+    const effect = JSON.parse(tribItem.effect);
+    if (effect.type !== 'tribulation_bonus') {
+      return res.status(400).json({ error: '该道具不能用于渡天劫' });
+    }
+
+    itemBonus = effect.value;
+    saveOnFail = effect.saveOnFail || false;
+    usedItem = getItemById(itemId);
+
+    db.prepare('UPDATE inventory SET quantity = quantity - 1 WHERE id = ?').run(tribItem.id);
+    db.prepare('DELETE FROM inventory WHERE quantity <= 0 AND id = ?').run(tribItem.id);
+  }
+
+  const baseSuccessRate = nextRealm.baseSuccessRate || 50;
+  const comprehensionBonus = character.comprehension * 2;
+  const totalSuccessRate = Math.min(baseSuccessRate + itemBonus + comprehensionBonus, 95);
+
+  const roll = Math.random() * 100;
+  const success = roll < totalSuccessRate;
+
+  if (success) {
+    const newRealm = nextRealm.name;
+    const newMaxHp = character.max_hp + nextRealm.hpBonus;
+    const newMaxMp = character.max_mp + nextRealm.mpBonus;
+    const newHp = newMaxHp;
+    const newMp = newMaxMp;
+    const newAttack = character.attack + nextRealm.atkBonus;
+    const newDefense = character.defense + nextRealm.defBonus;
+    const newSpeed = character.speed + nextRealm.speedBonus;
+    const newExp = 0;
+
+    db.prepare(`
+      UPDATE characters SET realm = ?, exp = ?, max_hp = ?, max_mp = ?, hp = ?, mp = ?, attack = ?, defense = ?, speed = ? WHERE id = ?
+    `).run(newRealm, newExp, newMaxHp, newMaxMp, newHp, newMp, newAttack, newDefense, newSpeed, character.id);
+
+    updateActiveQuestProgress(character.id, 'breakthrough', 1);
+
+    res.json({
+      message: `天劫降临！${usedItem ? `使用${usedItem.name}，` : ''}成功率${totalSuccessRate.toFixed(1)}%，渡劫成功！晋升为${newRealm}！`,
+      success: true,
+      tribulation: true,
+      usedItem: usedItem ? usedItem.name : null,
+      successRate: totalSuccessRate,
+      newRealm,
+      bonusStats: {
+        hp: nextRealm.hpBonus,
+        mp: nextRealm.mpBonus,
+        attack: nextRealm.atkBonus,
+        defense: nextRealm.defBonus,
+        speed: nextRealm.speedBonus
+      }
+    });
+  } else {
+    if (saveOnFail) {
+      const hpLoss = Math.floor(character.max_hp * 0.5);
+      const expLoss = Math.floor(character.exp * 0.2);
+      const newHp = Math.max(1, character.hp - hpLoss);
+      const newExp = Math.max(0, character.exp - expLoss);
+
+      db.prepare('UPDATE characters SET hp = ?, exp = ? WHERE id = ?').run(newHp, newExp, character.id);
+
+      res.json({
+        message: `天劫降临！使用${usedItem.name}，成功率${totalSuccessRate.toFixed(1)}%，渡劫失败！${usedItem.name}保住了你的性命！损失${expLoss}点修为，${hpLoss}点生命值。`,
+        success: false,
+        tribulation: true,
+        usedItem: usedItem.name,
+        successRate: totalSuccessRate,
+        saved: true,
+        expLost: expLoss,
+        hpLost: hpLoss,
+        newExp,
+        newHp
+      });
+    } else {
+      const deathPenalty = character.level >= 50 ? 0.3 : 0.2;
+      const expLoss = Math.floor(character.exp * deathPenalty);
+      const goldLoss = Math.floor(character.gold * 0.1);
+      const newExp = Math.max(0, character.exp - expLoss);
+      const newGold = Math.max(0, character.gold - goldLoss);
+      const newHp = Math.floor(character.max_hp * 0.1);
+
+      db.prepare('UPDATE characters SET exp = ?, gold = ?, hp = ? WHERE id = ?').run(newExp, newGold, newHp, character.id);
+
+      res.json({
+        message: `天劫降临！${usedItem ? `使用${usedItem.name}，` : ''}成功率${totalSuccessRate.toFixed(1)}%，渡劫失败！身受重伤，损失${expLoss}点修为，${goldLoss}金币。`,
+        success: false,
+        tribulation: true,
+        usedItem: usedItem ? usedItem.name : null,
+        successRate: totalSuccessRate,
+        saved: false,
+        expLost: expLoss,
+        goldLost: goldLoss,
+        newExp,
+        newGold,
+        newHp
+      });
+    }
+  }
+});
+
+router.get('/tribulation/info', auth, (req, res) => {
+  const character = db.prepare('SELECT * FROM characters WHERE user_id = ?').get(req.user.id);
+  if (!character) {
+    return res.status(404).json({ error: '角色不存在' });
+  }
+
+  const realmIndex = getRealmIndex(character.realm);
+  const nextRealm = getRealmByIndex(realmIndex + 1);
+
+  const tribItems = db.prepare(`
+    SELECT inv.*, items.effect FROM inventory inv
+    JOIN items ON inv.item_id = items.id
+    WHERE inv.character_id = ? AND items.sub_type = 'tribulation' AND inv.equipped = 0 AND inv.quantity > 0
+  `).all(character.id);
+
+  const tribItemsWithDetails = tribItems.map(item => ({
+    ...item,
+    itemData: getItemById(item.item_id),
+    effect: JSON.parse(item.effect)
+  }));
+
+  if (!nextRealm) {
+    return res.json({
+      canTribulate: false,
+      reason: '已达最高境界',
+      currentRealm: character.realm,
+      tribItems: tribItemsWithDetails
+    });
+  }
+
+  const baseSuccessRate = nextRealm.baseSuccessRate || 50;
+  const comprehensionBonus = character.comprehension * 2;
+  const minSuccessRate = baseSuccessRate + comprehensionBonus;
+
+  res.json({
+    canTribulate: character.level >= nextRealm.levelReq && character.exp >= nextRealm.expReq && character.hp >= character.max_hp,
+    currentRealm: character.realm,
+    nextRealm: {
+      name: nextRealm.name,
+      levelReq: nextRealm.levelReq,
+      expReq: nextRealm.expReq,
+      baseSuccessRate,
+      hpBonus: nextRealm.hpBonus,
+      mpBonus: nextRealm.mpBonus,
+      atkBonus: nextRealm.atkBonus,
+      defBonus: nextRealm.defBonus,
+      speedBonus: nextRealm.speedBonus
+    },
+    characterLevel: character.level,
+    characterExp: character.exp,
+    characterHp: character.hp,
+    characterMaxHp: character.max_hp,
+    comprehensionBonus,
+    minSuccessRate,
+    tribItems: tribItemsWithDetails
+  });
+});
+
 function updateActiveQuestProgress(characterId, objectiveType, amount) {
   const activeQuests = db.prepare(`
     SELECT cq.*, q.objectives FROM character_quests cq

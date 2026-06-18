@@ -82,3 +82,58 @@ export const questAPI = {
       body: JSON.stringify({ questId })
     })
 }
+
+export const mapAPI = {
+  getMaps: () => request('/maps'),
+  explore: (mapId) =>
+    request(`/maps/explore/${mapId}`, {
+      method: 'POST'
+    })
+}
+
+export const battleAPI = {
+  getBattle: () => request('/battle'),
+  attack: () =>
+    request('/battle/attack', {
+      method: 'POST'
+    }),
+  capture: (captureItemId) =>
+    request('/battle/capture', {
+      method: 'POST',
+      body: JSON.stringify({ captureItemId })
+    }),
+  flee: () =>
+    request('/battle/flee', {
+      method: 'POST'
+    })
+}
+
+export const petAPI = {
+  getPets: () => request('/pets'),
+  activate: (petId) =>
+    request(`/pets/activate/${petId}`, {
+      method: 'POST'
+    }),
+  rest: (petId) =>
+    request(`/pets/rest/${petId}`, {
+      method: 'POST'
+    }),
+  heal: (petId, itemId) =>
+    request(`/pets/heal/${petId}`, {
+      method: 'POST',
+      body: itemId ? JSON.stringify({ itemId }) : '{}'
+    }),
+  release: (petId) =>
+    request(`/pets/release/${petId}`, {
+      method: 'POST'
+    })
+}
+
+export const tribulationAPI = {
+  getInfo: () => request('/character/tribulation/info'),
+  undergo: (itemId) =>
+    request('/character/tribulation', {
+      method: 'POST',
+      body: itemId ? JSON.stringify({ itemId }) : '{}'
+    })
+}
