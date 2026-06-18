@@ -1,0 +1,17 @@
+{
+  "name": "xiuxian-game-server",
+  "version": "1.0.0",
+  "description": "文字版修仙游戏后端服务",
+  "main": "index.js",
+  "scripts": {
+    "start": "node index.js",
+    "dev": "node index.js"
+  },
+  "dependencies": {
+    "bcryptjs": "^2.4.3",
+    "better-sqlite3": "^12.11.1",
+    "cors": "^2.8.6",
+    "express": "^4.22.2",
+    "jsonwebtoken": "^9.0.3"
+  }
+}
