@@ -17,6 +17,9 @@ import Pet from './pages/Pet'
 import Achievement from './pages/Achievement'
 import SignIn from './pages/SignIn'
 import Admin from './pages/Admin'
+import Titles from './pages/Titles'
+import Skills from './pages/Skills'
+import Dungeons from './pages/Dungeons'
 
 function AuthGuard({ children }) {
   const { user, loading } = useAuth()
@@ -108,9 +111,12 @@ function GameLayout() {
           <NavLink to="/" end>首页</NavLink>
           <NavLink to="/sign-in">签到</NavLink>
           <NavLink to="/achievements">成就</NavLink>
+          <NavLink to="/titles">称号</NavLink>
+          <NavLink to="/skills">技能</NavLink>
           <NavLink to="/character">角色</NavLink>
           <NavLink to="/cultivate">修炼</NavLink>
           <NavLink to="/maps">探索</NavLink>
+          <NavLink to="/dungeons">副本</NavLink>
           <NavLink to="/pets">宠物</NavLink>
           <NavLink to="/equipment">装备</NavLink>
           <NavLink to="/inventory">背包</NavLink>
@@ -158,9 +164,12 @@ function AppRoutes() {
         <Route path="/" element={<GameHome />} />
         <Route path="/sign-in" element={<SignIn />} />
         <Route path="/achievements" element={<Achievement />} />
+        <Route path="/titles" element={<Titles />} />
+        <Route path="/skills" element={<Skills />} />
         <Route path="/character" element={<Character />} />
         <Route path="/cultivate" element={<Cultivate />} />
         <Route path="/maps" element={<Map />} />
+        <Route path="/dungeons" element={<Dungeons />} />
         <Route path="/battle" element={<Battle />} />
         <Route path="/pets" element={<Pet />} />
         <Route path="/equipment" element={<Equipment />} />

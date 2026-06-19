@@ -8,14 +8,23 @@ export default function Admin() {
   const [achievements, setAchievements] = useState([])
   const [signInRewards, setSignInRewards] = useState([])
   const [users, setUsers] = useState([])
+  const [skills, setSkills] = useState([])
+  const [dungeons, setDungeons] = useState([])
+  const [titles, setTitles] = useState([])
   const [loading, setLoading] = useState(false)
   const [message, setMessage] = useState('')
   const [messageType, setMessageType] = useState('success')
 
   const [showItemModal, setShowItemModal] = useState(false)
   const [showAchModal, setShowAchModal] = useState(false)
+  const [showSkillModal, setShowSkillModal] = useState(false)
+  const [showDungeonModal, setShowDungeonModal] = useState(false)
+  const [showTitleModal, setShowTitleModal] = useState(false)
   const [editingItem, setEditingItem] = useState(null)
   const [editingAch, setEditingAch] = useState(null)
+  const [editingSkill, setEditingSkill] = useState(null)
+  const [editingDungeon, setEditingDungeon] = useState(null)
+  const [editingTitle, setEditingTitle] = useState(null)
 
   const [itemForm, setItemForm] = useState({
     name: '', type: '', sub_type: '', quality: 'common', slot: '',
@@ -28,10 +37,31 @@ export default function Admin() {
     rewardGold: 0, rewardExp: 0, rewardItems: []
   })
 
+  const [skillForm, setSkillForm] = useState({
+    name: '', description: '', type: 'active', subtype: 'damage',
+    level_req: 1, realm_req: 0, mp_cost: 10, cooldown: 0, base_power: 10,
+    effect_str: '', growth_str: '', proficiency_per_level: 100, max_level: 10,
+    icon: '⚔️', sort_order: 1
+  })
+
+  const [dungeonForm, setDungeonForm] = useState({
+    name: '', description: '', level_req: 1, realm_req: 0, daily_limit: 3,
+    monsters_str: '', first_clear_rewards_str: '', clear_rewards_str: '',
+    icon: '🏰', sort_order: 1
+  })
+
+  const [titleForm, setTitleForm] = useState({
+    name: '', description: '', source: 'achievement', source_id: 0,
+    stats_str: '', icon: '🏅', quality: 'common', sort_order: 1
+  })
+
   const tabs = [
     { key: 'stats', label: '数据统计', icon: '📊' },
     { key: 'items', label: '物品管理', icon: '🎒' },
     { key: 'achievements', label: '成就管理', icon: '🏆' },
+    { key: 'skills', label: '技能管理', icon: '⚔️' },
+    { key: 'dungeons', label: '副本管理', icon: '🏰' },
+    { key: 'titles', label: '称号管理', icon: '🏅' },
     { key: 'rewards', label: '签到奖励', icon: '🎁' },
     { key: 'users', label: '用户列表', icon: '👥' },
   ]
@@ -73,6 +103,21 @@ export default function Admin() {
         case 'users': {
           const data = await adminAPI.getUsers({ pageSize: 100 })
           setUsers(data.users || data || [])
+          break
+        }
+        case 'skills': {
+          const data = await adminAPI.getSkills()
+          setSkills(data.skills || data || [])
+          break
+        }
+        case 'dungeons': {
+          const data = await adminAPI.getDungeons()
+          setDungeons(data.dungeons || data || [])
+          break
+        }
+        case 'titles': {
+          const data = await adminAPI.getTitles()
+          setTitles(data.titles || data || [])
           break
         }
       }
@@ -227,6 +272,206 @@ export default function Admin() {
     }
   }
 
+  const openNewSkill = () => {
+    setEditingSkill(null)
+    setSkillForm({
+      name: '', description: '', type: 'active', subtype: 'damage',
+      level_req: 1, realm_req: 0, mp_cost: 10, cooldown: 0, base_power: 10,
+      effect_str: '', growth_str: '', proficiency_per_level: 100, max_level: 10,
+      icon: '⚔️', sort_order: 1
+    })
+    setShowSkillModal(true)
+  }
+
+  const openEditSkill = (skill) => {
+    setEditingSkill(skill)
+    setSkillForm({
+      name: skill.name || '', description: skill.description || '',
+      type: skill.type || 'active', subtype: skill.subtype || 'damage',
+      level_req: skill.level_req || 1, realm_req: skill.realm_req || 0,
+      mp_cost: skill.mp_cost || 0, cooldown: skill.cooldown || 0,
+      base_power: skill.base_power || 0,
+      effect_str: skill.effect ? (typeof skill.effect === 'string' ? skill.effect : JSON.stringify(skill.effect)) : '',
+      growth_str: skill.growth ? (typeof skill.growth === 'string' ? skill.growth : JSON.stringify(skill.growth)) : '',
+      proficiency_per_level: skill.proficiency_per_level || 100,
+      max_level: skill.max_level || 10,
+      icon: skill.icon || '⚔️', sort_order: skill.sort_order || 1
+    })
+    setShowSkillModal(true)
+  }
+
+  const saveSkill = async () => {
+    if (!skillForm.name) {
+      showMsg('请填写技能名称', 'error')
+      return
+    }
+    try {
+      const data = {
+        name: skillForm.name, description: skillForm.description,
+        type: skillForm.type, subtype: skillForm.subtype,
+        levelReq: parseInt(skillForm.level_req) || 1,
+        realmReq: parseInt(skillForm.realm_req) || 0,
+        mpCost: parseInt(skillForm.mp_cost) || 0,
+        cooldown: parseInt(skillForm.cooldown) || 0,
+        basePower: parseInt(skillForm.base_power) || 0,
+        effect: skillForm.effect_str ? JSON.parse(skillForm.effect_str) : null,
+        growth: skillForm.growth_str ? JSON.parse(skillForm.growth_str) : null,
+        proficiencyPerLevel: parseInt(skillForm.proficiency_per_level) || 100,
+        maxLevel: parseInt(skillForm.max_level) || 10,
+        icon: skillForm.icon,
+        sortOrder: parseInt(skillForm.sort_order) || 1
+      }
+      if (editingSkill) {
+        await adminAPI.updateSkill(editingSkill.id, data)
+        showMsg('技能更新成功')
+      } else {
+        await adminAPI.createSkill(data)
+        showMsg('技能创建成功')
+      }
+      setShowSkillModal(false)
+      loadTabData('skills')
+    } catch (err) {
+      showMsg(err.message || '保存失败', 'error')
+    }
+  }
+
+  const deleteSkill = async (id, name) => {
+    if (!window.confirm(`确定要删除技能「${name}」吗？此操作不可恢复。`)) return
+    try {
+      await adminAPI.deleteSkill(id)
+      showMsg(`技能「${name}」已删除`)
+      loadTabData('skills')
+    } catch (err) {
+      showMsg(err.message || '删除失败', 'error')
+    }
+  }
+
+  const openNewDungeon = () => {
+    setEditingDungeon(null)
+    setDungeonForm({
+      name: '', description: '', level_req: 1, realm_req: 0, daily_limit: 3,
+      monsters_str: '', first_clear_rewards_str: '', clear_rewards_str: '',
+      icon: '🏰', sort_order: 1
+    })
+    setShowDungeonModal(true)
+  }
+
+  const openEditDungeon = (d) => {
+    setEditingDungeon(d)
+    setDungeonForm({
+      name: d.name || '', description: d.description || '',
+      level_req: d.level_req || 1, realm_req: d.realm_req || 0,
+      daily_limit: d.daily_limit || 3,
+      monsters_str: d.monsters ? (typeof d.monsters === 'string' ? d.monsters : JSON.stringify(d.monsters)) : '',
+      first_clear_rewards_str: d.first_clear_rewards ? (typeof d.first_clear_rewards === 'string' ? d.first_clear_rewards : JSON.stringify(d.first_clear_rewards)) : '',
+      clear_rewards_str: d.clear_rewards ? (typeof d.clear_rewards === 'string' ? d.clear_rewards : JSON.stringify(d.clear_rewards)) : '',
+      icon: d.icon || '🏰', sort_order: d.sort_order || 1
+    })
+    setShowDungeonModal(true)
+  }
+
+  const saveDungeon = async () => {
+    if (!dungeonForm.name) {
+      showMsg('请填写副本名称', 'error')
+      return
+    }
+    try {
+      const data = {
+        name: dungeonForm.name, description: dungeonForm.description,
+        levelReq: parseInt(dungeonForm.level_req) || 1,
+        realmReq: parseInt(dungeonForm.realm_req) || 0,
+        dailyLimit: parseInt(dungeonForm.daily_limit) || 3,
+        monsters: dungeonForm.monsters_str ? JSON.parse(dungeonForm.monsters_str) : [],
+        firstClearRewards: dungeonForm.first_clear_rewards_str ? JSON.parse(dungeonForm.first_clear_rewards_str) : {},
+        clearRewards: dungeonForm.clear_rewards_str ? JSON.parse(dungeonForm.clear_rewards_str) : {},
+        icon: dungeonForm.icon,
+        sortOrder: parseInt(dungeonForm.sort_order) || 1
+      }
+      if (editingDungeon) {
+        await adminAPI.updateDungeon(editingDungeon.id, data)
+        showMsg('副本更新成功')
+      } else {
+        await adminAPI.createDungeon(data)
+        showMsg('副本创建成功')
+      }
+      setShowDungeonModal(false)
+      loadTabData('dungeons')
+    } catch (err) {
+      showMsg(err.message || '保存失败，请检查JSON格式', 'error')
+    }
+  }
+
+  const deleteDungeon = async (id, name) => {
+    if (!window.confirm(`确定要删除副本「${name}」吗？此操作不可恢复。`)) return
+    try {
+      await adminAPI.deleteDungeon(id)
+      showMsg(`副本「${name}」已删除`)
+      loadTabData('dungeons')
+    } catch (err) {
+      showMsg(err.message || '删除失败', 'error')
+    }
+  }
+
+  const openNewTitle = () => {
+    setEditingTitle(null)
+    setTitleForm({
+      name: '', description: '', source: 'achievement', source_id: 0,
+      stats_str: '', icon: '🏅', quality: 'common', sort_order: 1
+    })
+    setShowTitleModal(true)
+  }
+
+  const openEditTitle = (t) => {
+    setEditingTitle(t)
+    setTitleForm({
+      name: t.name || '', description: t.description || '',
+      source: t.source || 'achievement', source_id: t.source_id || 0,
+      stats_str: t.stats ? (typeof t.stats === 'string' ? t.stats : JSON.stringify(t.stats)) : '',
+      icon: t.icon || '🏅', quality: t.quality || 'common',
+      sort_order: t.sort_order || 1
+    })
+    setShowTitleModal(true)
+  }
+
+  const saveTitle = async () => {
+    if (!titleForm.name) {
+      showMsg('请填写称号名称', 'error')
+      return
+    }
+    try {
+      const data = {
+        name: titleForm.name, description: titleForm.description,
+        source: titleForm.source,
+        sourceId: parseInt(titleForm.source_id) || 0,
+        stats: titleForm.stats_str ? JSON.parse(titleForm.stats_str) : {},
+        icon: titleForm.icon, quality: titleForm.quality,
+        sortOrder: parseInt(titleForm.sort_order) || 1
+      }
+      if (editingTitle) {
+        await adminAPI.updateTitle(editingTitle.id, data)
+        showMsg('称号更新成功')
+      } else {
+        await adminAPI.createTitle(data)
+        showMsg('称号创建成功')
+      }
+      setShowTitleModal(false)
+      loadTabData('titles')
+    } catch (err) {
+      showMsg(err.message || '保存失败，请检查JSON格式', 'error')
+    }
+  }
+
+  const deleteTitle = async (id, name) => {
+    if (!window.confirm(`确定要删除称号「${name}」吗？此操作不可恢复。`)) return
+    try {
+      await adminAPI.deleteTitle(id)
+      showMsg(`称号「${name}」已删除`)
+      loadTabData('titles')
+    } catch (err) {
+      showMsg(err.message || '删除失败', 'error')
+    }
+  }
+
   const addRewardItem = () => {
     setAchForm({
       ...achForm,
@@ -284,6 +529,9 @@ export default function Admin() {
                 <div className="stat-item"><div className="stat-value">{stats.totalCharacters || stats.characterCount || 0}</div><div className="stat-label">总角色数</div></div>
                 <div className="stat-item"><div className="stat-value">{stats.totalItems || stats.itemCount || 0}</div><div className="stat-label">物品数</div></div>
                 <div className="stat-item"><div className="stat-value">{stats.totalAchievements || stats.achievementCount || 0}</div><div className="stat-label">成就数</div></div>
+                <div className="stat-item"><div className="stat-value">{stats.skillCount || 0}</div><div className="stat-label">技能数</div></div>
+                <div className="stat-item"><div className="stat-value">{stats.dungeonCount || 0}</div><div className="stat-label">副本数</div></div>
+                <div className="stat-item"><div className="stat-value">{stats.titleCount || 0}</div><div className="stat-label">称号数</div></div>
                 <div className="stat-item"><div className="stat-value">{stats.todaySignIns || 0}</div><div className="stat-label">今日签到</div></div>
                 <div className="stat-item"><div className="stat-value">{stats.totalSignIns || 0}</div><div className="stat-label">累计签到</div></div>
               </div>
@@ -347,6 +595,113 @@ export default function Admin() {
                         <td>
                           <button className="btn-primary" style={{ padding: '0.3rem 0.8rem', fontSize: '0.8rem', marginRight: '0.5rem' }} onClick={() => openEditAch(ach)}>编辑</button>
                           <button className="btn-primary" style={{ padding: '0.3rem 0.8rem', fontSize: '0.8rem', background: '#c0392b' }} onClick={() => deleteAch(ach.id, ach.name)}>删除</button>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          )}
+
+          {activeTab === 'skills' && (
+            <div>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
+                <div className="card-title" style={{ marginBottom: 0 }}>技能列表</div>
+                <button className="btn-primary" onClick={openNewSkill}>+ 新增技能</button>
+              </div>
+              <div className="admin-table">
+                <table>
+                  <thead><tr>
+                    <th>ID</th><th>图标</th><th>名称</th><th>类型</th><th>子类型</th>
+                    <th>等级要求</th><th>灵力消耗</th><th>威力</th><th>操作</th>
+                  </tr></thead>
+                  <tbody>
+                    {skills.map(s => (
+                      <tr key={s.id}>
+                        <td>{s.id}</td>
+                        <td style={{ fontSize: '1.2rem' }}>{s.icon}</td>
+                        <td>{s.name}</td>
+                        <td style={{ color: s.type === 'active' ? '#e67e22' : '#9b59b6' }}>
+                          {s.type === 'active' ? '主动' : '被动'}
+                        </td>
+                        <td>{s.subtype || '-'}</td>
+                        <td>Lv.{s.level_req}</td>
+                        <td>{s.mp_cost || 0}</td>
+                        <td>{s.base_power || 0}</td>
+                        <td>
+                          <button className="btn-primary" style={{ padding: '0.3rem 0.8rem', fontSize: '0.8rem', marginRight: '0.5rem' }} onClick={() => openEditSkill(s)}>编辑</button>
+                          <button className="btn-primary" style={{ padding: '0.3rem 0.8rem', fontSize: '0.8rem', background: '#c0392b' }} onClick={() => deleteSkill(s.id, s.name)}>删除</button>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          )}
+
+          {activeTab === 'dungeons' && (
+            <div>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
+                <div className="card-title" style={{ marginBottom: 0 }}>副本列表</div>
+                <button className="btn-primary" onClick={openNewDungeon}>+ 新增副本</button>
+              </div>
+              <div className="admin-table">
+                <table>
+                  <thead><tr>
+                    <th>ID</th><th>图标</th><th>名称</th><th>等级要求</th>
+                    <th>每日次数</th><th>波次数</th><th>操作</th>
+                  </tr></thead>
+                  <tbody>
+                    {dungeons.map(d => (
+                      <tr key={d.id}>
+                        <td>{d.id}</td>
+                        <td style={{ fontSize: '1.2rem' }}>{d.icon}</td>
+                        <td>{d.name}</td>
+                        <td>Lv.{d.level_req}</td>
+                        <td>{d.daily_limit}</td>
+                        <td>{Array.isArray(d.monsters) ? d.monsters.length : 0}</td>
+                        <td>
+                          <button className="btn-primary" style={{ padding: '0.3rem 0.8rem', fontSize: '0.8rem', marginRight: '0.5rem' }} onClick={() => openEditDungeon(d)}>编辑</button>
+                          <button className="btn-primary" style={{ padding: '0.3rem 0.8rem', fontSize: '0.8rem', background: '#c0392b' }} onClick={() => deleteDungeon(d.id, d.name)}>删除</button>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          )}
+
+          {activeTab === 'titles' && (
+            <div>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
+                <div className="card-title" style={{ marginBottom: 0 }}>称号列表</div>
+                <button className="btn-primary" onClick={openNewTitle}>+ 新增称号</button>
+              </div>
+              <div className="admin-table">
+                <table>
+                  <thead><tr>
+                    <th>ID</th><th>图标</th><th>名称</th><th>品质</th><th>来源</th>
+                    <th>属性加成</th><th>操作</th>
+                  </tr></thead>
+                  <tbody>
+                    {titles.map(t => (
+                      <tr key={t.id}>
+                        <td>{t.id}</td>
+                        <td style={{ fontSize: '1.2rem' }}>{t.icon}</td>
+                        <td style={{ color: qualityColor(t.quality), fontWeight: 700 }}>{t.name}</td>
+                        <td><span style={{ color: qualityColor(t.quality) }}>{t.quality}</span></td>
+                        <td>{t.source || '-'}</td>
+                        <td style={{ color: '#7ec8e3', fontSize: '0.85rem' }}>
+                          {t.stats && typeof t.stats === 'object'
+                            ? Object.entries(t.stats).map(([k, v]) => `${k}+${v}`).join(' ')
+                            : '-'}
+                        </td>
+                        <td>
+                          <button className="btn-primary" style={{ padding: '0.3rem 0.8rem', fontSize: '0.8rem', marginRight: '0.5rem' }} onClick={() => openEditTitle(t)}>编辑</button>
+                          <button className="btn-primary" style={{ padding: '0.3rem 0.8rem', fontSize: '0.8rem', background: '#c0392b' }} onClick={() => deleteTitle(t.id, t.name)}>删除</button>
                         </td>
                       </tr>
                     ))}
@@ -509,6 +864,118 @@ export default function Admin() {
             <div className="modal-actions">
               <button className="btn-primary" onClick={() => setShowAchModal(false)}>取消</button>
               <button className="btn-primary" onClick={saveAch}>保存</button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {showSkillModal && (
+        <div className="modal-overlay" onClick={() => setShowSkillModal(false)}>
+          <div className="modal-card" onClick={e => e.stopPropagation()}>
+            <div className="modal-title">{editingSkill ? '编辑技能' : '新增技能'}</div>
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.8rem' }}>
+              <div className="form-group"><label>技能名称 *</label><input type="text" value={skillForm.name} onChange={e => setSkillForm({ ...skillForm, name: e.target.value })} /></div>
+              <div className="form-group"><label>图标</label><input type="text" value={skillForm.icon} onChange={e => setSkillForm({ ...skillForm, icon: e.target.value })} /></div>
+              <div className="form-group"><label>类型</label>
+                <select value={skillForm.type} onChange={e => setSkillForm({ ...skillForm, type: e.target.value })} style={selectStyle}>
+                  <option value="active">主动技能</option>
+                  <option value="passive">被动技能</option>
+                </select>
+              </div>
+              <div className="form-group"><label>子类型</label>
+                <select value={skillForm.subtype} onChange={e => setSkillForm({ ...skillForm, subtype: e.target.value })} style={selectStyle}>
+                  <option value="damage">伤害</option>
+                  <option value="damage_crit">暴击伤害</option>
+                  <option value="damage_heal">伤害+吸血</option>
+                  <option value="heal">治疗</option>
+                  <option value="buff">增益</option>
+                </select>
+              </div>
+              <div className="form-group"><label>等级要求</label><input type="number" value={skillForm.level_req} onChange={e => setSkillForm({ ...skillForm, level_req: e.target.value })} /></div>
+              <div className="form-group"><label>境界要求(序号)</label><input type="number" value={skillForm.realm_req} onChange={e => setSkillForm({ ...skillForm, realm_req: e.target.value })} /></div>
+              <div className="form-group"><label>灵力消耗</label><input type="number" value={skillForm.mp_cost} onChange={e => setSkillForm({ ...skillForm, mp_cost: e.target.value })} /></div>
+              <div className="form-group"><label>冷却回合</label><input type="number" value={skillForm.cooldown} onChange={e => setSkillForm({ ...skillForm, cooldown: e.target.value })} /></div>
+              <div className="form-group"><label>基础威力</label><input type="number" value={skillForm.base_power} onChange={e => setSkillForm({ ...skillForm, base_power: e.target.value })} /></div>
+              <div className="form-group"><label>每级熟练度需求</label><input type="number" value={skillForm.proficiency_per_level} onChange={e => setSkillForm({ ...skillForm, proficiency_per_level: e.target.value })} /></div>
+              <div className="form-group"><label>最大等级</label><input type="number" value={skillForm.max_level} onChange={e => setSkillForm({ ...skillForm, max_level: e.target.value })} /></div>
+              <div className="form-group"><label>排序</label><input type="number" value={skillForm.sort_order} onChange={e => setSkillForm({ ...skillForm, sort_order: e.target.value })} /></div>
+            </div>
+            <div className="form-group"><label>描述</label><input type="text" value={skillForm.description} onChange={e => setSkillForm({ ...skillForm, description: e.target.value })} /></div>
+            <div className="form-group"><label>效果 (JSON) 例: {"{\"type\":\"damage\",\"value\":100}"}</label>
+              <textarea value={skillForm.effect_str} onChange={e => setSkillForm({ ...skillForm, effect_str: e.target.value })} style={textareaStyle} />
+            </div>
+            <div className="form-group"><label>成长 (JSON) 每级增加的属性</label>
+              <textarea value={skillForm.growth_str} onChange={e => setSkillForm({ ...skillForm, growth_str: e.target.value })} style={textareaStyle} />
+            </div>
+            <div className="modal-actions">
+              <button className="btn-primary" onClick={() => setShowSkillModal(false)}>取消</button>
+              <button className="btn-primary" onClick={saveSkill}>保存</button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {showDungeonModal && (
+        <div className="modal-overlay" onClick={() => setShowDungeonModal(false)}>
+          <div className="modal-card" onClick={e => e.stopPropagation()}>
+            <div className="modal-title">{editingDungeon ? '编辑副本' : '新增副本'}</div>
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.8rem' }}>
+              <div className="form-group"><label>副本名称 *</label><input type="text" value={dungeonForm.name} onChange={e => setDungeonForm({ ...dungeonForm, name: e.target.value })} /></div>
+              <div className="form-group"><label>图标</label><input type="text" value={dungeonForm.icon} onChange={e => setDungeonForm({ ...dungeonForm, icon: e.target.value })} /></div>
+              <div className="form-group"><label>等级要求</label><input type="number" value={dungeonForm.level_req} onChange={e => setDungeonForm({ ...dungeonForm, level_req: e.target.value })} /></div>
+              <div className="form-group"><label>境界要求</label><input type="number" value={dungeonForm.realm_req} onChange={e => setDungeonForm({ ...dungeonForm, realm_req: e.target.value })} /></div>
+              <div className="form-group"><label>每日挑战次数</label><input type="number" value={dungeonForm.daily_limit} onChange={e => setDungeonForm({ ...dungeonForm, daily_limit: e.target.value })} /></div>
+              <div className="form-group"><label>排序</label><input type="number" value={dungeonForm.sort_order} onChange={e => setDungeonForm({ ...dungeonForm, sort_order: e.target.value })} /></div>
+            </div>
+            <div className="form-group"><label>描述</label><input type="text" value={dungeonForm.description} onChange={e => setDungeonForm({ ...dungeonForm, description: e.target.value })} /></div>
+            <div className="form-group"><label>怪物波次 (JSON 二维数组) 例: [[1,2],[3,4]] 每子数组为一波的怪物ID</label>
+              <textarea value={dungeonForm.monsters_str} onChange={e => setDungeonForm({ ...dungeonForm, monsters_str: e.target.value })} style={textareaStyle} />
+            </div>
+            <div className="form-group"><label>首通奖励 (JSON) 例: {"{\"gold\":1000,\"exp\":500}"}</label>
+              <textarea value={dungeonForm.first_clear_rewards_str} onChange={e => setDungeonForm({ ...dungeonForm, first_clear_rewards_str: e.target.value })} style={textareaStyle} />
+            </div>
+            <div className="form-group"><label>普通通关奖励 (JSON)</label>
+              <textarea value={dungeonForm.clear_rewards_str} onChange={e => setDungeonForm({ ...dungeonForm, clear_rewards_str: e.target.value })} style={textareaStyle} />
+            </div>
+            <div className="modal-actions">
+              <button className="btn-primary" onClick={() => setShowDungeonModal(false)}>取消</button>
+              <button className="btn-primary" onClick={saveDungeon}>保存</button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {showTitleModal && (
+        <div className="modal-overlay" onClick={() => setShowTitleModal(false)}>
+          <div className="modal-card" onClick={e => e.stopPropagation()}>
+            <div className="modal-title">{editingTitle ? '编辑称号' : '新增称号'}</div>
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.8rem' }}>
+              <div className="form-group"><label>称号名称 *</label><input type="text" value={titleForm.name} onChange={e => setTitleForm({ ...titleForm, name: e.target.value })} /></div>
+              <div className="form-group"><label>图标</label><input type="text" value={titleForm.icon} onChange={e => setTitleForm({ ...titleForm, icon: e.target.value })} /></div>
+              <div className="form-group"><label>来源</label>
+                <select value={titleForm.source} onChange={e => setTitleForm({ ...titleForm, source: e.target.value })} style={selectStyle}>
+                  <option value="achievement">成就</option>
+                  <option value="event">活动</option>
+                  <option value="manual">手动</option>
+                </select>
+              </div>
+              <div className="form-group"><label>来源ID</label><input type="number" value={titleForm.source_id} onChange={e => setTitleForm({ ...titleForm, source_id: e.target.value })} /></div>
+              <div className="form-group"><label>品质</label>
+                <select value={titleForm.quality} onChange={e => setTitleForm({ ...titleForm, quality: e.target.value })} style={selectStyle}>
+                  <option value="common">普通</option><option value="uncommon">优秀</option>
+                  <option value="rare">稀有</option><option value="epic">史诗</option>
+                  <option value="legendary">传说</option><option value="mythic">神话</option>
+                </select>
+              </div>
+              <div className="form-group"><label>排序</label><input type="number" value={titleForm.sort_order} onChange={e => setTitleForm({ ...titleForm, sort_order: e.target.value })} /></div>
+            </div>
+            <div className="form-group"><label>描述</label><input type="text" value={titleForm.description} onChange={e => setTitleForm({ ...titleForm, description: e.target.value })} /></div>
+            <div className="form-group"><label>属性加成 (JSON) 例: {"{\"attack\":10,\"defense\":5,\"max_hp\":100}"}</label>
+              <textarea value={titleForm.stats_str} onChange={e => setTitleForm({ ...titleForm, stats_str: e.target.value })} style={textareaStyle} />
+            </div>
+            <div className="modal-actions">
+              <button className="btn-primary" onClick={() => setShowTitleModal(false)}>取消</button>
+              <button className="btn-primary" onClick={saveTitle}>保存</button>
             </div>
           </div>
         </div>

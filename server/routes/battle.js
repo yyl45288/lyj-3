@@ -1,8 +1,9 @@
 const express = require('express');
 const db = require('../db');
 const { auth } = require('../middleware');
-const { getMonsterById, getPetById, getItemById, getRealmIndex, getRealmByIndex, calculatePetStats } = require('../gameData');
+const { getMonsterById, getPetById, getItemById, getRealmIndex, getRealmByIndex, calculatePetStats, calculateSkillDamage, calculateSkillHeal, getProficiencyToNextLevel } = require('../gameData');
 const { updateAchievementProgress, updateGoldAchievement } = require('./achievement');
+const { addSkillProficiency } = require('./skills');
 
 const router = express.Router();
 
@@ -13,8 +14,29 @@ router.get('/', auth, (req, res) => {
   }
 
   const activeBattle = db.prepare('SELECT * FROM active_battles WHERE character_id = ?').get(character.id);
+
+  const charSkills = db.prepare(`
+    SELECT cs.*, s.* FROM character_skills cs
+    JOIN skills s ON s.id = cs.skill_id
+    WHERE cs.character_id = ? AND s.type = 'active'
+  `).all(character.id);
+  const availableSkills = charSkills.map(cs => {
+    const effect = cs.effect ? (typeof cs.effect === 'string' ? JSON.parse(cs.effect) : cs.effect) : {};
+    return {
+      id: cs.skill_id,
+      name: cs.name,
+      description: cs.description,
+      icon: cs.icon,
+      type: cs.type,
+      subtype: cs.subtype,
+      mpCost: cs.mp_cost || 0,
+      level: cs.level,
+      effect
+    };
+  });
+
   if (!activeBattle) {
-    return res.json({ battle: null });
+    return res.json({ battle: null, availableSkills });
   }
 
   const monster = getMonsterById(activeBattle.monster_id);
@@ -31,7 +53,164 @@ router.get('/', auth, (req, res) => {
       pet: petData,
       playerHp: activeBattle.player_hp,
       playerMaxHp: activeBattle.player_max_hp
+    },
+    availableSkills
+  });
+});
+
+router.post('/skill/:skillId', auth, (req, res) => {
+  const { skillId } = req.params;
+  const character = db.prepare('SELECT * FROM characters WHERE user_id = ?').get(req.user.id);
+  if (!character) {
+    return res.status(404).json({ error: '角色不存在' });
+  }
+
+  const activeBattle = db.prepare('SELECT * FROM active_battles WHERE character_id = ?').get(character.id);
+  if (!activeBattle) {
+    return res.status(400).json({ error: '当前没有进行中的战斗' });
+  }
+
+  const charSkill = db.prepare(`
+    SELECT cs.*, s.* FROM character_skills cs
+    JOIN skills s ON s.id = cs.skill_id
+    WHERE cs.character_id = ? AND cs.skill_id = ?
+  `).get(character.id, skillId);
+  if (!charSkill) {
+    return res.status(400).json({ error: '未学习该技能' });
+  }
+  if (charSkill.type !== 'active') {
+    return res.status(400).json({ error: '被动技能无法主动释放' });
+  }
+
+  const mpCost = charSkill.mp_cost || 0;
+  if (character.mp < mpCost) {
+    return res.status(400).json({ error: `灵力不足，需要${mpCost}点` });
+  }
+
+  const monster = getMonsterById(activeBattle.monster_id);
+  const effect = charSkill.effect ? (typeof charSkill.effect === 'string' ? JSON.parse(charSkill.effect) : charSkill.effect) : {};
+  const logs = [];
+  let battleEnded = false;
+  let battleResult = null;
+  let newMp = character.mp - mpCost;
+
+  if (effect.type === 'damage' || effect.type === 'damage_crit' || effect.type === 'damage_heal') {
+    const { damage, isCrit } = calculateSkillDamage(charSkill, charSkill.level, character.attack, monster.defense);
+    activeBattle.monster_hp -= damage;
+    logs.push(`${charSkill.icon || ''}你释放「${charSkill.name}」` + (isCrit ? '(暴击!)' : '') + `，对${monster.name}造成了${damage}点伤害！`);
+
+    if (effect.type === 'damage_heal') {
+      const heal = calculateSkillHeal(charSkill, charSkill.level, character.max_hp);
+      activeBattle.player_hp = Math.min(activeBattle.player_max_hp, activeBattle.player_hp + heal);
+      logs.push(`恢复了${heal}点生命！`);
     }
+  } else if (effect.type === 'heal') {
+    const heal = calculateSkillHeal(charSkill, charSkill.level, character.max_hp);
+    activeBattle.player_hp = Math.min(activeBattle.player_max_hp, activeBattle.player_hp + heal);
+    logs.push(`${charSkill.icon || ''}你释放「${charSkill.name}」，恢复了${heal}点生命！`);
+  } else if (effect.type === 'buff') {
+    logs.push(`${charSkill.icon || ''}你释放「${charSkill.name}」，${effect.stat || '属性'}提升！`);
+  }
+
+  addSkillProficiency(character.id, parseInt(skillId), 10);
+
+  if (activeBattle.monster_hp <= 0) {
+    battleEnded = true;
+    battleResult = handleVictory(character, activeBattle, monster);
+    logs.push(`${monster.name}被击败了！`);
+    logs.push(`获得${monster.exp}点经验和${monster.gold}金币！`);
+    if (battleResult.leveledUp) {
+      logs.push(`等级提升至${battleResult.newLevel}级！`);
+    }
+  } else {
+    if (activeBattle.pet_id && activeBattle.pet_hp > 0) {
+      const pet = db.prepare('SELECT * FROM pets WHERE id = ?').get(activeBattle.pet_id);
+      const petInfo = getPetById(pet.pet_id);
+      const petDamage = Math.max(1, pet.attack - monster.defense + Math.floor(Math.random() * 5));
+      activeBattle.monster_hp -= petDamage;
+      logs.push(`${pet.name}(${petInfo.name})对${monster.name}造成了${petDamage}点伤害！`);
+      if (activeBattle.monster_hp <= 0) {
+        battleEnded = true;
+        battleResult = handleVictory(character, activeBattle, monster);
+        logs.push(`${monster.name}被击败了！`);
+        logs.push(`获得${monster.exp}点经验和${monster.gold}金币！`);
+        if (battleResult.leveledUp) {
+          logs.push(`等级提升至${battleResult.newLevel}级！`);
+        }
+      }
+    }
+
+    if (!battleEnded) {
+      if (activeBattle.pet_id && activeBattle.pet_hp > 0 && Math.random() < 0.5) {
+        const pet = db.prepare('SELECT * FROM pets WHERE id = ?').get(activeBattle.pet_id);
+        const petInfo = getPetById(pet.pet_id);
+        const monsterToPetDamage = Math.max(1, monster.attack - pet.defense + Math.floor(Math.random() * 5));
+        activeBattle.pet_hp -= monsterToPetDamage;
+        logs.push(`${monster.name}对${pet.name}(${petInfo.name})造成了${monsterToPetDamage}点伤害！`);
+        if (activeBattle.pet_hp <= 0) {
+          activeBattle.pet_hp = 0;
+          logs.push(`${pet.name}失去了战斗能力！`);
+        }
+      } else {
+        const monsterDamage = Math.max(1, monster.attack - character.defense + Math.floor(Math.random() * 5));
+        activeBattle.player_hp -= monsterDamage;
+        logs.push(`${monster.name}对你造成了${monsterDamage}点伤害！`);
+        if (activeBattle.player_hp <= 0) {
+          battleEnded = true;
+          battleResult = handleDefeat(character, activeBattle, monster);
+          logs.push(`你被${monster.name}击败了...`);
+        }
+      }
+    }
+  }
+
+  if (battleEnded) {
+    db.prepare('DELETE FROM active_battles WHERE character_id = ?').run(character.id);
+  } else {
+    activeBattle.turn += 1;
+    db.prepare(`
+      UPDATE active_battles 
+      SET monster_hp = ?, player_hp = ?, pet_hp = ?, turn = ?
+      WHERE character_id = ?
+    `).run(activeBattle.monster_hp, activeBattle.player_hp, activeBattle.pet_hp, activeBattle.turn, character.id);
+  }
+
+  db.prepare('UPDATE characters SET mp = ? WHERE id = ?').run(Math.max(0, newMp), character.id);
+  const updatedCharacter = db.prepare('SELECT * FROM characters WHERE user_id = ?').get(req.user.id);
+  const activePet = activeBattle.pet_id ? db.prepare('SELECT * FROM pets WHERE id = ?').get(activeBattle.pet_id) : null;
+  const petData = activePet ? { ...activePet, petInfo: getPetById(activePet.pet_id) } : null;
+
+  const updatedCharSkill = db.prepare('SELECT * FROM character_skills WHERE id = ?').get(charSkill.id);
+  const profToNext = updatedCharSkill && updatedCharSkill.level < (charSkill.max_level || 10)
+    ? getProficiencyToNextLevel(charSkill, updatedCharSkill.level)
+    : 0;
+
+  res.json({
+    logs,
+    battleEnded,
+    battleResult,
+    battle: battleEnded ? null : {
+      ...activeBattle,
+      monster: {
+        ...monster,
+        currentHp: activeBattle.monster_hp
+      },
+      pet: petData,
+      playerHp: activeBattle.player_hp,
+      playerMaxHp: activeBattle.player_max_hp,
+      petHp: activeBattle.pet_hp,
+      petMaxHp: activeBattle.pet_max_hp
+    },
+    character: {
+      ...updatedCharacter,
+      expToNext: updatedCharacter.level * 100
+    },
+    skill: updatedCharSkill ? {
+      id: updatedCharSkill.skill_id,
+      level: updatedCharSkill.level,
+      proficiency: updatedCharSkill.proficiency,
+      proficiencyToNext: profToNext
+    } : null
   });
 });
 

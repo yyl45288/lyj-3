@@ -97,6 +97,10 @@ export const battleAPI = {
     request('/battle/attack', {
       method: 'POST'
     }),
+  useSkill: (skillId) =>
+    request(`/battle/skill/${skillId}`, {
+      method: 'POST'
+    }),
   capture: (captureItemId) =>
     request('/battle/capture', {
       method: 'POST',
@@ -104,6 +108,47 @@ export const battleAPI = {
     }),
   flee: () =>
     request('/battle/flee', {
+      method: 'POST'
+    })
+}
+
+export const titleAPI = {
+  getTitles: () => request('/titles'),
+  equipTitle: (titleId) =>
+    request(`/titles/equip/${titleId}`, {
+      method: 'POST'
+    }),
+  unequipTitle: () =>
+    request('/titles/unequip', {
+      method: 'POST'
+    })
+}
+
+export const skillAPI = {
+  getSkills: () => request('/skills'),
+  learnSkill: (skillId) =>
+    request(`/skills/learn/${skillId}`, {
+      method: 'POST'
+    }),
+  upgradeSkill: (skillId) =>
+    request(`/skills/upgrade/${skillId}`, {
+      method: 'POST'
+    })
+}
+
+export const dungeonAPI = {
+  getDungeons: () => request('/dungeons'),
+  challenge: (dungeonId) =>
+    request(`/dungeons/challenge/${dungeonId}`, {
+      method: 'POST'
+    }),
+  getBattle: () => request('/dungeons/battle'),
+  attack: () =>
+    request('/dungeons/attack', {
+      method: 'POST'
+    }),
+  flee: () =>
+    request('/dungeons/flee', {
       method: 'POST'
     })
 }
@@ -218,5 +263,50 @@ export const adminAPI = {
   getUsers: (params) => {
     const query = new URLSearchParams(params).toString()
     return request(`/admin/users?${query}`)
-  }
+  },
+  getSkills: () => request('/admin/skills'),
+  createSkill: (data) =>
+    request('/admin/skills', {
+      method: 'POST',
+      body: JSON.stringify(data)
+    }),
+  updateSkill: (id, data) =>
+    request(`/admin/skills/${id}`, {
+      method: 'PUT',
+      body: JSON.stringify(data)
+    }),
+  deleteSkill: (id) =>
+    request(`/admin/skills/${id}`, {
+      method: 'DELETE'
+    }),
+  getDungeons: () => request('/admin/dungeons'),
+  createDungeon: (data) =>
+    request('/admin/dungeons', {
+      method: 'POST',
+      body: JSON.stringify(data)
+    }),
+  updateDungeon: (id, data) =>
+    request(`/admin/dungeons/${id}`, {
+      method: 'PUT',
+      body: JSON.stringify(data)
+    }),
+  deleteDungeon: (id) =>
+    request(`/admin/dungeons/${id}`, {
+      method: 'DELETE'
+    }),
+  getTitles: () => request('/admin/titles'),
+  createTitle: (data) =>
+    request('/admin/titles', {
+      method: 'POST',
+      body: JSON.stringify(data)
+    }),
+  updateTitle: (id, data) =>
+    request(`/admin/titles/${id}`, {
+      method: 'PUT',
+      body: JSON.stringify(data)
+    }),
+  deleteTitle: (id) =>
+    request(`/admin/titles/${id}`, {
+      method: 'DELETE'
+    })
 }

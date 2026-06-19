@@ -220,6 +220,84 @@ const EQUIPMENT_SLOTS = ['weapon', 'helmet', 'armor', 'boots', 'accessory'];
 const QUALITY_ORDER = ['common', 'uncommon', 'rare', 'epic', 'legendary'];
 const QUALITY_NAMES = { common: '普通', uncommon: '优秀', rare: '稀有', epic: '史诗', legendary: '传说' };
 
+const TITLE_STATS_MAP = {
+  '修仙新手': { attack: 2, defense: 1 },
+  '勤勉修士': { attack: 5, defense: 3, max_hp: 20 },
+  '修炼狂人': { attack: 15, defense: 8, max_hp: 80, max_mp: 40 },
+  '初出茅庐': { attack: 3, speed: 1 },
+  '除妖达人': { attack: 8, defense: 4 },
+  '百战战神': { attack: 25, defense: 12, speed: 5, max_hp: 100 },
+  '富甲一方': { max_hp: 50, max_mp: 30 },
+  '筑基修士': { attack: 5, defense: 5, max_hp: 50 },
+  '金丹真人': { attack: 15, defense: 10, max_hp: 150, max_mp: 80 },
+  '元婴老祖': { attack: 30, defense: 20, max_hp: 300, max_mp: 150, speed: 5 },
+  '签到达人': { max_hp: 30, max_mp: 20 },
+  '坚持不懈': { defense: 3, max_hp: 40 },
+  '宠物新手': { speed: 2 },
+  '任务达人': { attack: 5, defense: 3, max_hp: 30 }
+};
+
+const SKILL_TYPE_NAMES = { active: '主动', passive: '被动' };
+const SKILL_SUBTYPE_NAMES = { attack: '攻击', buff: '增益', heal: '治疗', passive: '被动' };
+
+function getTitleStats(titleName) {
+  return TITLE_STATS_MAP[titleName] || {};
+}
+
+function calculateSkillDamage(skill, charSkillLevel, characterAttack, monsterDefense) {
+  const effect = skill.effect ? (typeof skill.effect === 'string' ? JSON.parse(skill.effect) : skill.effect) : {};
+  const growth = skill.growth ? (typeof skill.growth === 'string' ? JSON.parse(skill.growth) : skill.growth) : {};
+  const levelBonus = charSkillLevel > 1 ? ((charSkillLevel - 1) * (growth.powerPerLevel || 5)) : 0;
+  const basePower = (skill.base_power || 0) + levelBonus;
+  const multiplier = effect.multiplier || 1;
+  let damage = Math.floor((characterAttack + basePower) * multiplier - monsterDefense);
+  damage = Math.max(1, damage + Math.floor(Math.random() * 10));
+  if (effect.type === 'damage_crit' && Math.random() < (effect.critChance || 0)) {
+    damage = Math.floor(damage * (effect.critMultiplier || 1.5));
+  }
+  return { damage, isCrit: effect.type === 'damage_crit' && Math.random() < (effect.critChance || 0) };
+}
+
+function calculateSkillHeal(skill, charSkillLevel, playerMaxHp) {
+  const effect = skill.effect ? (typeof skill.effect === 'string' ? JSON.parse(skill.effect) : skill.effect) : {};
+  const growth = skill.growth ? (typeof skill.growth === 'string' ? JSON.parse(skill.growth) : skill.growth) : {};
+  if (effect.type === 'heal') {
+    const levelBonus = charSkillLevel > 1 ? ((charSkillLevel - 1) * (growth.valuePerLevel || 10)) : 0;
+    return Math.floor((effect.value || 0) + levelBonus);
+  }
+  if (effect.type === 'damage_heal') {
+    const healPercent = (effect.healPercent || 0) + (charSkillLevel > 1 ? ((charSkillLevel - 1) * (growth.healPerLevel || 0)) : 0);
+    return Math.floor(playerMaxHp * healPercent);
+  }
+  return 0;
+}
+
+function getProficiencyToNextLevel(skill, currentLevel) {
+  const base = skill.proficiency_per_level || 100;
+  return base * currentLevel;
+}
+
+function applyPassiveSkillBonus(character, passiveSkills) {
+  let result = { ...character };
+  for (const ps of passiveSkills) {
+    const skill = ps.skill || ps;
+    const effect = skill.effect ? (typeof skill.effect === 'string' ? JSON.parse(skill.effect) : skill.effect) : {};
+    const growth = skill.growth ? (typeof skill.growth === 'string' ? JSON.parse(skill.growth) : skill.growth) : {};
+    const level = ps.level || 1;
+    if (effect.type === 'passive') {
+      const levelBonus = level > 1 ? ((level - 1) * (growth.valuePerLevel || 0)) : 0;
+      const totalValue = (effect.value || 0) + levelBonus;
+      const stat = effect.stat;
+      if (stat === 'max_hp') { result.max_hp = (result.max_hp || 0) + totalValue; result.maxHp = result.max_hp; }
+      if (stat === 'max_mp') { result.max_mp = (result.max_mp || 0) + totalValue; result.maxMp = result.max_mp; }
+      if (stat === 'attack') { result.attack = (result.attack || 0) + totalValue; }
+      if (stat === 'defense') { result.defense = (result.defense || 0) + totalValue; }
+      if (stat === 'speed') { result.speed = (result.speed || 0) + totalValue; }
+    }
+  }
+  return result;
+}
+
 function getItemById(id) {
   return ITEMS.find(item => item.id === id) || null;
 }
@@ -276,6 +354,14 @@ module.exports = {
   EQUIPMENT_SLOTS,
   QUALITY_ORDER,
   QUALITY_NAMES,
+  TITLE_STATS_MAP,
+  SKILL_TYPE_NAMES,
+  SKILL_SUBTYPE_NAMES,
+  getTitleStats,
+  calculateSkillDamage,
+  calculateSkillHeal,
+  getProficiencyToNextLevel,
+  applyPassiveSkillBonus,
   getItemById,
   getQuestById,
   getRealmByIndex,

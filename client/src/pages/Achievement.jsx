@@ -39,15 +39,17 @@ export default function Achievement() {
       })
   }
 
-  const formatRewards = (rewards) => {
-    if (!rewards) return ''
+  const formatRewards = (rewards, ach) => {
     const parts = []
-    if (rewards.gold) parts.push(`金币+${rewards.gold}`)
-    if (rewards.exp) parts.push(`经验+${rewards.exp}`)
-    if (rewards.items && rewards.items.length > 0) {
-      parts.push(`道具×${rewards.items.length}种`)
+    if (ach && ach.title) parts.push(`🏅称号「${ach.title}」`)
+    if (rewards) {
+      if (rewards.gold) parts.push(`金币+${rewards.gold}`)
+      if (rewards.exp) parts.push(`经验+${rewards.exp}`)
+      if (rewards.items && rewards.items.length > 0) {
+        parts.push(`道具×${rewards.items.length}种`)
+      }
     }
-    return parts.join('，')
+    return parts.length > 0 ? parts.join('，') : '—'
   }
 
   const formatProgressText = (ach) => {
@@ -128,7 +130,7 @@ export default function Achievement() {
                   </span>
                 </div>
                 <div className="achievement-rewards">
-                  奖励：{formatRewards(ach.rewards)}
+                  奖励：{formatRewards(ach.rewards, ach)}
                 </div>
               </div>
               <div className="achievement-action">

@@ -1,7 +1,7 @@
 const express = require('express');
 const db = require('../db');
 const { auth } = require('../middleware');
-const { getRealmIndex, getItemById } = require('../gameData');
+const { getRealmIndex, getItemById, TITLE_STATS_MAP, getTitleStats } = require('../gameData');
 
 const router = express.Router();
 
@@ -235,14 +235,46 @@ router.post('/claim/:achievementId', auth, (req, res) => {
       UPDATE character_achievements SET claimed = 1, claimed_at = datetime('now')
       WHERE id = ?
     `).run(charAchievement.id);
+
+    if (achievement.title && achievement.title.trim() !== '') {
+      const titleName = achievement.title.trim();
+      let title = db.prepare('SELECT * FROM titles WHERE name = ?').get(titleName);
+      if (!title) {
+        const stats = TITLE_STATS_MAP[titleName] || {};
+        const r = db.prepare(`
+          INSERT INTO titles (name, description, source, source_id, stats, icon, quality, sort_order)
+          VALUES (?, ?, 'achievement', ?, ?, ?, 'common', ?)
+        `).run(
+          titleName,
+          `完成成就「${achievement.name}」获得`,
+          achievement.id,
+          JSON.stringify(stats),
+          achievement.icon || '🏆',
+          achievement.sort_order || 0
+        );
+        title = { id: r.lastInsertRowid };
+      }
+      const existingCharTitle = db.prepare(
+        'SELECT * FROM character_titles WHERE character_id = ? AND title_id = ?'
+      ).get(character.id, title.id);
+      if (!existingCharTitle) {
+        db.prepare(`
+          INSERT INTO character_titles (character_id, title_id, equipped)
+          VALUES (?, ?, 0)
+        `).run(character.id, title.id);
+      }
+    }
   });
 
   try {
     transaction();
+    const grantedTitle = achievement.title ? { name: achievement.title } : null;
     res.json({
-      message: `领取成就「${achievement.name}」奖励成功！`,
+      message: grantedTitle
+        ? `领取成就「${achievement.name}」奖励成功！获得称号「${grantedTitle.name}」！`
+        : `领取成就「${achievement.name}」奖励成功！`,
       rewards,
-      title: achievement.title
+      title: grantedTitle
     });
   } catch (err) {
     console.error(err);

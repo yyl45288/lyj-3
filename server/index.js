@@ -11,6 +11,9 @@ const petRoutes = require('./routes/pet');
 const adminRoutes = require('./routes/admin');
 const achievementRoutes = require('./routes/achievement');
 const signInRoutes = require('./routes/signIn');
+const titleRoutes = require('./routes/titles');
+const skillRoutes = require('./routes/skills');
+const dungeonRoutes = require('./routes/dungeons');
 
 const app = express();
 const PORT = 3001;
@@ -28,6 +31,9 @@ app.use('/api/pets', petRoutes);
 app.use('/api/admin', adminRoutes);
 app.use('/api/achievements', achievementRoutes);
 app.use('/api/sign-in', signInRoutes);
+app.use('/api/titles', titleRoutes);
+app.use('/api/skills', skillRoutes);
+app.use('/api/dungeons', dungeonRoutes);
 
 app.use((err, req, res, next) => {
   console.error(err.stack);

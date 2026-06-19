@@ -2,7 +2,7 @@ const Database = require('better-sqlite3');
 const path = require('path');
 const { ITEMS, QUESTS } = require('./gameData');
 
-const db = new Database(path.join(__dirname, 'game.db'));
+const db = new Database(path.join(__dirname, 'game_v3.db'));
 
 db.pragma('journal_mode = WAL');
 db.pragma('foreign_keys = ON');
@@ -163,6 +163,111 @@ db.exec(`
     day_number INTEGER,
     rewards TEXT,
     sort_order INTEGER DEFAULT 0
+  );
+
+  CREATE TABLE IF NOT EXISTS titles (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    name TEXT NOT NULL,
+    description TEXT,
+    source TEXT DEFAULT 'achievement',
+    source_id INTEGER,
+    stats TEXT,
+    icon TEXT,
+    quality TEXT DEFAULT 'common',
+    sort_order INTEGER DEFAULT 0,
+    created_at TEXT DEFAULT (datetime('now'))
+  );
+
+  CREATE TABLE IF NOT EXISTS character_titles (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    character_id INTEGER NOT NULL,
+    title_id INTEGER NOT NULL,
+    equipped INTEGER DEFAULT 0,
+    obtained_at TEXT DEFAULT (datetime('now')),
+    FOREIGN KEY (character_id) REFERENCES characters(id) ON DELETE CASCADE,
+    FOREIGN KEY (title_id) REFERENCES titles(id) ON DELETE CASCADE,
+    UNIQUE(character_id, title_id)
+  );
+
+  CREATE TABLE IF NOT EXISTS skills (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    name TEXT NOT NULL,
+    description TEXT,
+    type TEXT NOT NULL,
+    subtype TEXT,
+    level_req INTEGER DEFAULT 1,
+    realm_req TEXT,
+    mp_cost INTEGER DEFAULT 0,
+    cooldown INTEGER DEFAULT 0,
+    base_power INTEGER DEFAULT 0,
+    effect TEXT,
+    growth TEXT,
+    proficiency_per_level INTEGER DEFAULT 100,
+    max_level INTEGER DEFAULT 10,
+    icon TEXT,
+    sort_order INTEGER DEFAULT 0,
+    created_at TEXT DEFAULT (datetime('now'))
+  );
+
+  CREATE TABLE IF NOT EXISTS character_skills (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    character_id INTEGER NOT NULL,
+    skill_id INTEGER NOT NULL,
+    level INTEGER DEFAULT 1,
+    proficiency INTEGER DEFAULT 0,
+    learned_at TEXT DEFAULT (datetime('now')),
+    FOREIGN KEY (character_id) REFERENCES characters(id) ON DELETE CASCADE,
+    FOREIGN KEY (skill_id) REFERENCES skills(id) ON DELETE CASCADE,
+    UNIQUE(character_id, skill_id)
+  );
+
+  CREATE TABLE IF NOT EXISTS dungeons (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    name TEXT NOT NULL,
+    description TEXT,
+    level_req INTEGER DEFAULT 1,
+    realm_req TEXT,
+    daily_limit INTEGER DEFAULT 3,
+    monsters TEXT,
+    first_clear_rewards TEXT,
+    clear_rewards TEXT,
+    icon TEXT,
+    sort_order INTEGER DEFAULT 0,
+    created_at TEXT DEFAULT (datetime('now'))
+  );
+
+  CREATE TABLE IF NOT EXISTS dungeon_records (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    character_id INTEGER NOT NULL,
+    dungeon_id INTEGER NOT NULL,
+    challenge_date TEXT NOT NULL,
+    challenge_count INTEGER DEFAULT 0,
+    first_cleared INTEGER DEFAULT 0,
+    cleared_count INTEGER DEFAULT 0,
+    first_cleared_at TEXT,
+    FOREIGN KEY (character_id) REFERENCES characters(id) ON DELETE CASCADE,
+    FOREIGN KEY (dungeon_id) REFERENCES dungeons(id) ON DELETE CASCADE,
+    UNIQUE(character_id, dungeon_id, challenge_date)
+  );
+
+  CREATE TABLE IF NOT EXISTS dungeon_battles (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    character_id INTEGER NOT NULL UNIQUE,
+    dungeon_id INTEGER NOT NULL,
+    current_wave INTEGER DEFAULT 1,
+    total_waves INTEGER DEFAULT 1,
+    monster_id INTEGER NOT NULL,
+    monster_hp INTEGER NOT NULL,
+    monster_max_hp INTEGER NOT NULL,
+    player_hp INTEGER NOT NULL,
+    player_max_hp INTEGER NOT NULL,
+    pet_id INTEGER,
+    pet_hp INTEGER,
+    pet_max_hp INTEGER,
+    turn INTEGER DEFAULT 1,
+    created_at TEXT DEFAULT (datetime('now')),
+    FOREIGN KEY (character_id) REFERENCES characters(id) ON DELETE CASCADE,
+    FOREIGN KEY (dungeon_id) REFERENCES dungeons(id) ON DELETE CASCADE
   );
 `);
 
@@ -356,6 +461,113 @@ function seedData() {
     });
 
     insertMany(defaultSignInRewards);
+  }
+
+  const skillCount = db.prepare('SELECT COUNT(*) as count FROM skills').get().count;
+  if (skillCount === 0) {
+    const defaultSkills = [
+      { name: '基础剑法', description: '最基础的剑术攻击，造成少量伤害', type: 'active', subtype: 'attack', level_req: 1, mp_cost: 5, base_power: 15, effect: JSON.stringify({ type: 'damage', multiplier: 1.2 }), growth: JSON.stringify({ powerPerLevel: 5 }), proficiency_per_level: 100, max_level: 10, icon: '🗡️', sort_order: 1 },
+      { name: '御火术', description: '操控火焰攻击敌人', type: 'active', subtype: 'attack', level_req: 5, mp_cost: 15, base_power: 35, effect: JSON.stringify({ type: 'damage', multiplier: 1.5, element: 'fire' }), growth: JSON.stringify({ powerPerLevel: 10 }), proficiency_per_level: 150, max_level: 10, icon: '🔥', sort_order: 2 },
+      { name: '御水术', description: '操控水流进行攻击并恢复少量生命', type: 'active', subtype: 'attack', level_req: 5, mp_cost: 15, base_power: 25, effect: JSON.stringify({ type: 'damage_heal', damageMultiplier: 1.3, healPercent: 0.1 }), growth: JSON.stringify({ powerPerLevel: 8, healPerLevel: 0.01 }), proficiency_per_level: 150, max_level: 10, icon: '💧', sort_order: 3 },
+      { name: '雷击术', description: '召唤雷电攻击敌人，有几率造成双倍伤害', type: 'active', subtype: 'attack', level_req: 10, realm_req: '练气期', mp_cost: 25, base_power: 50, effect: JSON.stringify({ type: 'damage_crit', multiplier: 1.6, critChance: 0.2, critMultiplier: 2.0 }), growth: JSON.stringify({ powerPerLevel: 12 }), proficiency_per_level: 200, max_level: 10, icon: '⚡', sort_order: 4 },
+      { name: '玄冰术', description: '释放极寒之力冻结敌人并造成伤害', type: 'active', subtype: 'attack', level_req: 15, mp_cost: 30, base_power: 70, effect: JSON.stringify({ type: 'damage', multiplier: 1.8, element: 'ice' }), growth: JSON.stringify({ powerPerLevel: 15 }), proficiency_per_level: 200, max_level: 10, icon: '❄️', sort_order: 5 },
+      { name: '五雷轰顶', description: '召唤五道天雷轰击敌人', type: 'active', subtype: 'attack', level_req: 25, realm_req: '筑基期', mp_cost: 50, base_power: 120, effect: JSON.stringify({ type: 'damage', multiplier: 2.2, element: 'thunder' }), growth: JSON.stringify({ powerPerLevel: 20 }), proficiency_per_level: 250, max_level: 10, icon: '🌩️', sort_order: 6 },
+      { name: '护体金光', description: '短时间内提升防御力', type: 'active', subtype: 'buff', level_req: 3, mp_cost: 10, base_power: 0, effect: JSON.stringify({ type: 'buff', stat: 'defense', value: 10, duration: 3 }), growth: JSON.stringify({ valuePerLevel: 3 }), proficiency_per_level: 120, max_level: 10, icon: '🛡️', sort_order: 7 },
+      { name: '疾风步', description: '短时间内大幅提升速度', type: 'active', subtype: 'buff', level_req: 8, mp_cost: 12, base_power: 0, effect: JSON.stringify({ type: 'buff', stat: 'speed', value: 8, duration: 3 }), growth: JSON.stringify({ valuePerLevel: 2 }), proficiency_per_level: 120, max_level: 10, icon: '💨', sort_order: 8 },
+      { name: '回春术', description: '恢复自身大量生命值', type: 'active', subtype: 'heal', level_req: 6, mp_cost: 20, base_power: 0, effect: JSON.stringify({ type: 'heal', value: 80 }), growth: JSON.stringify({ valuePerLevel: 15 }), proficiency_per_level: 150, max_level: 10, icon: '💚', sort_order: 9 },
+      { name: '金刚不坏', description: '被动提升最大生命值', type: 'passive', subtype: 'passive', level_req: 2, effect: JSON.stringify({ type: 'passive', stat: 'max_hp', value: 20 }), growth: JSON.stringify({ valuePerLevel: 10 }), proficiency_per_level: 100, max_level: 10, icon: '💪', sort_order: 10 },
+      { name: '灵力充沛', description: '被动提升最大灵力值', type: 'passive', subtype: 'passive', level_req: 4, effect: JSON.stringify({ type: 'passive', stat: 'max_mp', value: 15 }), growth: JSON.stringify({ valuePerLevel: 8 }), proficiency_per_level: 100, max_level: 10, icon: '🔮', sort_order: 11 },
+      { name: '战意', description: '被动提升攻击力', type: 'passive', subtype: 'passive', level_req: 7, effect: JSON.stringify({ type: 'passive', stat: 'attack', value: 5 }), growth: JSON.stringify({ valuePerLevel: 3 }), proficiency_per_level: 120, max_level: 10, icon: '⚔️', sort_order: 12 },
+      { name: '铁壁', description: '被动提升防御力', type: 'passive', subtype: 'passive', level_req: 9, effect: JSON.stringify({ type: 'passive', stat: 'defense', value: 4 }), growth: JSON.stringify({ valuePerLevel: 2 }), proficiency_per_level: 120, max_level: 10, icon: '🛡️', sort_order: 13 },
+      { name: '身轻如燕', description: '被动提升速度', type: 'passive', subtype: 'passive', level_req: 12, effect: JSON.stringify({ type: 'passive', stat: 'speed', value: 3 }), growth: JSON.stringify({ valuePerLevel: 2 }), proficiency_per_level: 120, max_level: 10, icon: '🦅', sort_order: 14 }
+    ];
+
+    const insertSkill = db.prepare(`
+      INSERT INTO skills (name, description, type, subtype, level_req, realm_req, mp_cost, cooldown, base_power, effect, growth, proficiency_per_level, max_level, icon, sort_order)
+      VALUES (@name, @description, @type, @subtype, @level_req, @realm_req, @mp_cost, @cooldown, @base_power, @effect, @growth, @proficiency_per_level, @max_level, @icon, @sort_order)
+    `);
+
+    const insertMany = db.transaction((skills) => {
+      for (const skill of skills) {
+        const s = {
+          name: '', description: '', type: 'active', subtype: '',
+          level_req: 1, realm_req: '', mp_cost: 0, cooldown: 0, base_power: 0,
+          effect: null, growth: null, proficiency_per_level: 100, max_level: 10,
+          icon: '', sort_order: 0,
+          ...skill
+        };
+        insertSkill.run(s);
+      }
+    });
+
+    insertMany(defaultSkills);
+  }
+
+  const dungeonCount = db.prepare('SELECT COUNT(*) as count FROM dungeons').get().count;
+  if (dungeonCount === 0) {
+    const defaultDungeons = [
+      {
+        name: '青冥秘境', description: '初级修士试炼之地，灵气充盈', level_req: 5, daily_limit: 3,
+        monsters: JSON.stringify([[1], [2], [3]]),
+        first_clear_rewards: JSON.stringify({ gold: 500, exp: 300, items: [{ itemId: 101, quantity: 1 }] }),
+        clear_rewards: JSON.stringify({ gold: 200, exp: 150, items: [{ itemId: 1, quantity: 3 }] }),
+        icon: '🌿', sort_order: 1
+      },
+      {
+        name: '黑风魔窟', description: '隐藏在黑风谷深处的魔窟', level_req: 15, daily_limit: 3,
+        monsters: JSON.stringify([[4], [5], [6]]),
+        first_clear_rewards: JSON.stringify({ gold: 1500, exp: 800, items: [{ itemId: 102, quantity: 1 }, { itemId: 3, quantity: 5 }] }),
+        clear_rewards: JSON.stringify({ gold: 500, exp: 400, items: [{ itemId: 2, quantity: 3 }] }),
+        icon: '🌑', sort_order: 2
+      },
+      {
+        name: '万妖巢穴', description: '万妖林深处，群妖聚集之地', level_req: 25, daily_limit: 2,
+        monsters: JSON.stringify([[7], [8], [9]]),
+        first_clear_rewards: JSON.stringify({ gold: 5000, exp: 2000, items: [{ itemId: 103, quantity: 1 }] }),
+        clear_rewards: JSON.stringify({ gold: 1500, exp: 1000, items: [{ itemId: 5, quantity: 3 }] }),
+        icon: '🌲', sort_order: 3
+      },
+      {
+        name: '毒龙殿', description: '盘踞在毒龙沼泽深处的毒龙巢穴', level_req: 35, daily_limit: 2,
+        monsters: JSON.stringify([[10], [11], [12]]),
+        first_clear_rewards: JSON.stringify({ gold: 10000, exp: 5000, items: [{ itemId: 203, quantity: 1 }, { itemId: 6, quantity: 5 }] }),
+        clear_rewards: JSON.stringify({ gold: 3000, exp: 2500, items: [{ itemId: 4, quantity: 5 }] }),
+        icon: '🐉', sort_order: 4
+      },
+      {
+        name: '寒冰祭坛', description: '极寒冰原中心的古老祭坛', level_req: 50, daily_limit: 2,
+        monsters: JSON.stringify([[13], [14], [15]]),
+        first_clear_rewards: JSON.stringify({ gold: 30000, exp: 15000, items: [{ itemId: 104, quantity: 1 }] }),
+        clear_rewards: JSON.stringify({ gold: 8000, exp: 6000, items: [{ itemId: 6, quantity: 5 }] }),
+        icon: '❄️', sort_order: 5
+      },
+      {
+        name: '天魔殿', description: '天魔窟最深处，上古魔族的圣殿', level_req: 65, daily_limit: 1,
+        monsters: JSON.stringify([[16], [17], [18]]),
+        first_clear_rewards: JSON.stringify({ gold: 100000, exp: 50000, items: [{ itemId: 105, quantity: 1 }, { itemId: 505, quantity: 1 }] }),
+        clear_rewards: JSON.stringify({ gold: 20000, exp: 15000, items: [{ itemId: 702, quantity: 2 }] }),
+        icon: '👹', sort_order: 6
+      }
+    ];
+
+    const insertDungeon = db.prepare(`
+      INSERT INTO dungeons (name, description, level_req, realm_req, daily_limit, monsters, first_clear_rewards, clear_rewards, icon, sort_order)
+      VALUES (@name, @description, @level_req, @realm_req, @daily_limit, @monsters, @first_clear_rewards, @clear_rewards, @icon, @sort_order)
+    `);
+
+    const insertMany = db.transaction((dungeons) => {
+      for (const dungeon of dungeons) {
+        const d = {
+          name: '', description: '', level_req: 1, realm_req: '', daily_limit: 3,
+          monsters: '[]', first_clear_rewards: '{}', clear_rewards: '{}',
+          icon: '', sort_order: 0,
+          ...dungeon
+        };
+        insertDungeon.run(d);
+      }
+    });
+
+    insertMany(defaultDungeons);
   }
 }
 

@@ -1,16 +1,21 @@
 import { useState, useEffect } from 'react'
-import { characterAPI } from '../api'
+import { characterAPI, titleAPI } from '../api'
 
 export default function Character() {
   const [character, setCharacter] = useState(null)
   const [loading, setLoading] = useState(true)
   const [actionLoading, setActionLoading] = useState(false)
   const [message, setMessage] = useState('')
+  const [equippedTitle, setEquippedTitle] = useState(null)
 
   const fetchCharacter = () => {
-    characterAPI.getCharacter()
-      .then((data) => setCharacter(data.character || data))
-      .catch(() => {})
+    Promise.all([
+      characterAPI.getCharacter(),
+      titleAPI.getTitles().catch(() => ({}))
+    ]).then(([charData, titleData]) => {
+      setCharacter(charData.character || charData)
+      setEquippedTitle(titleData.equippedTitle || null)
+    }).catch(() => {})
       .finally(() => setLoading(false))
   }
 
@@ -44,8 +49,28 @@ export default function Character() {
       {message && <div className="card" style={{ textAlign: 'center', color: message.includes('成功') ? 'var(--color-success)' : 'var(--color-danger)' }}>{message}</div>}
 
       <div className="card">
-        <div className="card-title">{character.name}</div>
+        <div className="card-title">
+          {character.name}
+          {equippedTitle && (
+            <span style={{ marginLeft: '0.8rem', fontSize: '1rem', color: '#d4af37', fontWeight: 500 }}>
+              「{equippedTitle.icon || '🏅'} {equippedTitle.name}」
+            </span>
+          )}
+        </div>
         <div className="stat-grid">
+          {equippedTitle && (
+            <div className="stat-item">
+              <span className="stat-label">当前称号</span>
+              <span className="stat-value" style={{ color: '#d4af37' }}>
+                {equippedTitle.name}
+                {equippedTitle.stats && Object.entries(equippedTitle.stats).map(([k, v]) => (
+                  <span key={k} style={{ marginLeft: '0.4rem', fontSize: '0.8rem', color: '#7ec8e3' }}>
+                    +{v} {({attack:'攻',defense:'防',speed:'速',max_hp:'血',max_mp:'灵'})[k] || k}
+                  </span>
+                ))}
+              </span>
+            </div>
+          )}
           <div className="stat-item">
             <span className="stat-label">境界</span>
             <span className="stat-value">{character.realm}</span>

@@ -11,6 +11,7 @@ export default function Battle() {
   const [captureItems, setCaptureItems] = useState([])
   const [battleEnded, setBattleEnded] = useState(false)
   const [battleResult, setBattleResult] = useState(null)
+  const [availableSkills, setAvailableSkills] = useState([])
   const navigate = useNavigate()
 
   const fetchData = () => {
@@ -21,6 +22,7 @@ export default function Battle() {
     ]).then(([battleData, charData, invData]) => {
       setBattle(battleData.battle)
       setCharacter(charData.character || charData)
+      setAvailableSkills(battleData.availableSkills || [])
       const captureInv = invData.inventory?.filter(
         (inv) => inv.effect?.type === 'capture_bonus' && inv.quantity > 0
       ) || []
@@ -109,6 +111,31 @@ export default function Battle() {
       const newLog = {
         id: Date.now(),
         text: err.message || '逃跑失败',
+        type: 'error'
+      }
+      setLogs((prev) => [newLog, ...prev].slice(0, 20))
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  const handleUseSkill = async (skillId) => {
+    if (loading || battleEnded) return
+    setLoading(true)
+    try {
+      const data = await battleAPI.useSkill(skillId)
+      setLogs((prev) => [...(data.logs || []), ...prev].slice(0, 20))
+      setBattle(data.battle)
+      setCharacter(data.character)
+      if (data.availableSkills) setAvailableSkills(data.availableSkills)
+      if (data.battleEnded) {
+        setBattleEnded(true)
+        setBattleResult(data.battleResult)
+      }
+    } catch (err) {
+      const newLog = {
+        id: Date.now(),
+        text: err.message || '技能释放失败',
         type: 'error'
       }
       setLogs((prev) => [newLog, ...prev].slice(0, 20))
@@ -244,6 +271,33 @@ export default function Battle() {
                     </div>
                   </button>
                 ))}
+              </div>
+            </div>
+          )}
+
+          {availableSkills.length > 0 && (
+            <div className="capture-panel">
+              <div className="panel-title">⚔️ 技能（{character?.mp || 0}/{character?.maxMp || 0} MP）</div>
+              <div className="capture-items">
+                {availableSkills.map((skill) => {
+                  const canUse = (character?.mp || 0) >= (skill.mpCost || 0)
+                  return (
+                    <button
+                      key={skill.id}
+                      className="capture-item"
+                      onClick={() => handleUseSkill(skill.id)}
+                      disabled={loading || !canUse}
+                      title={skill.description}
+                    >
+                      <div className="item-name">
+                        {skill.icon || '✨'} {skill.name} <span style={{ fontSize: '0.75rem', color: '#aaa' }}>Lv.{skill.level}</span>
+                      </div>
+                      <div className="item-desc" style={{ color: canUse ? '#7ec8e3' : '#e74c3c' }}>
+                        MP消耗: {skill.mpCost || 0}
+                      </div>
+                    </button>
+                  )
+                })}
               </div>
             </div>
           )}
