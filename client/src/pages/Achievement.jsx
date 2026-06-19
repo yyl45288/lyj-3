@@ -50,6 +50,22 @@ export default function Achievement() {
     return parts.join('，')
   }
 
+  const formatProgressText = (ach) => {
+    const realms = ['练气期', '筑基期', '金丹期', '元婴期', '化神期', '炼虚期', '合体期', '大乘期', '渡劫期', '真仙', '金仙', '太乙金仙', '大罗金仙', '准圣', '圣人']
+    if (ach.type === 'realm') {
+      const curRealm = realms[Math.max(0, Math.min(ach.progress - 1, realms.length - 1))] || '-'
+      const tgtRealm = realms[Math.max(0, Math.min(ach.target_value - 1, realms.length - 1))] || '-'
+      return `${curRealm} → ${tgtRealm}`
+    }
+    if (ach.type === 'gold') {
+      return `${ach.progress.toLocaleString()} / ${ach.target_value.toLocaleString()}`
+    }
+    if (ach.type === 'sign_in' || ach.type === 'consecutive_sign_in') {
+      return `${ach.progress}天 / ${ach.target_value}天`
+    }
+    return `${ach.progress} / ${ach.target_value}`
+  }
+
   if (loading) return <div className="loading-screen">加载中...</div>
 
   return (
@@ -108,7 +124,7 @@ export default function Achievement() {
                     />
                   </div>
                   <span className="progress-text">
-                    {ach.progress} / {ach.target_value}
+                    {formatProgressText(ach)}
                   </span>
                 </div>
                 <div className="achievement-rewards">

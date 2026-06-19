@@ -11,6 +11,8 @@ router.get('/', auth, (req, res) => {
     return res.status(404).json({ error: '角色不存在' });
   }
 
+  syncAchievementsWithExistingData(character.id);
+
   const achievements = db.prepare('SELECT * FROM achievements ORDER BY sort_order, id').all();
 
   const characterAchievements = db.prepare(
@@ -52,6 +54,103 @@ router.get('/', auth, (req, res) => {
     claimedTitles
   });
 });
+
+function syncAchievementsWithExistingData(characterId) {
+  const character = db.prepare('SELECT * FROM characters WHERE id = ?').get(characterId);
+  if (!character) return;
+
+  const cultivateCount = character.cultivate_count || 0;
+  if (cultivateCount > 0) {
+    const achList = db.prepare("SELECT * FROM achievements WHERE type = 'cultivate'").all();
+    for (const ach of achList) {
+      syncSingleAchievement(characterId, ach.id, cultivateCount, ach.target_value);
+    }
+  }
+
+  const combatStats = db.prepare(`
+    SELECT COUNT(*) as count FROM battle_logs 
+    WHERE character_id = ? AND result = 'victory'
+  `).get(characterId);
+  if (combatStats && combatStats.count > 0) {
+    const achList = db.prepare("SELECT * FROM achievements WHERE type = 'combat'").all();
+    for (const ach of achList) {
+      syncSingleAchievement(characterId, ach.id, combatStats.count, ach.target_value);
+    }
+  }
+
+  const realmIndex = getRealmIndex(character.realm) + 1;
+  if (realmIndex > 0) {
+    const achList = db.prepare("SELECT * FROM achievements WHERE type = 'realm'").all();
+    for (const ach of achList) {
+      syncSingleAchievement(characterId, ach.id, realmIndex, ach.target_value);
+    }
+  }
+
+  if (character.gold > 0) {
+    const achList = db.prepare("SELECT * FROM achievements WHERE type = 'gold'").all();
+    for (const ach of achList) {
+      syncSingleAchievement(characterId, ach.id, character.gold, ach.target_value);
+    }
+  }
+
+  const petCount = db.prepare('SELECT COUNT(*) as count FROM pets WHERE character_id = ?').get(characterId).count;
+  if (petCount > 0) {
+    const achList = db.prepare("SELECT * FROM achievements WHERE type = 'pet_catch'").all();
+    for (const ach of achList) {
+      syncSingleAchievement(characterId, ach.id, petCount, ach.target_value);
+    }
+  }
+
+  const questCompleteCount = db.prepare(`
+    SELECT COUNT(*) as count FROM character_quests 
+    WHERE character_id = ? AND status = 'completed'
+  `).get(characterId).count;
+  if (questCompleteCount > 0) {
+    const achList = db.prepare("SELECT * FROM achievements WHERE type = 'quest_complete'").all();
+    for (const ach of achList) {
+      syncSingleAchievement(characterId, ach.id, questCompleteCount, ach.target_value);
+    }
+  }
+
+  const signInCount = db.prepare('SELECT COUNT(*) as count FROM sign_in_records WHERE character_id = ?').get(characterId).count;
+  if (signInCount > 0) {
+    const achList = db.prepare("SELECT * FROM achievements WHERE type = 'sign_in'").all();
+    for (const ach of achList) {
+      syncSingleAchievement(characterId, ach.id, signInCount, ach.target_value);
+    }
+  }
+}
+
+function syncSingleAchievement(characterId, achievementId, actualValue, targetValue) {
+  let charAch = db.prepare(
+    'SELECT * FROM character_achievements WHERE character_id = ? AND achievement_id = ?'
+  ).get(characterId, achievementId);
+
+  if (!charAch) {
+    const result = db.prepare(`
+      INSERT INTO character_achievements (character_id, achievement_id, progress, completed)
+      VALUES (?, ?, 0, 0)
+    `).run(characterId, achievementId);
+    charAch = { id: result.lastInsertRowid, progress: 0, completed: 0 };
+  }
+
+  if (charAch.completed === 1) return;
+
+  const newProgress = Math.min(actualValue, targetValue);
+  if (newProgress > charAch.progress) {
+    const isCompleted = newProgress >= targetValue;
+    if (isCompleted) {
+      db.prepare(`
+        UPDATE character_achievements
+        SET progress = ?, completed = 1, completed_at = datetime('now')
+        WHERE id = ?
+      `).run(newProgress, charAch.id);
+    } else {
+      db.prepare('UPDATE character_achievements SET progress = ? WHERE id = ?')
+        .run(newProgress, charAch.id);
+    }
+  }
+}
 
 router.post('/claim/:achievementId', auth, (req, res) => {
   const { achievementId } = req.params;

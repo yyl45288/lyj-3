@@ -271,12 +271,15 @@ function seedData() {
     insertMany(newItems);
   }
 
-  const adminCount = db.prepare('SELECT COUNT(*) as count FROM admins').get().count;
-  if (adminCount === 0) {
-    const bcrypt = require('bcryptjs');
-    const passwordHash = bcrypt.hashSync('admin123', 10);
+  const bcrypt = require('bcryptjs');
+  const passwordHash = bcrypt.hashSync('admin123', 10);
+  const existingAdmin = db.prepare('SELECT * FROM admins WHERE username = ?').get('admin');
+  if (!existingAdmin) {
     db.prepare('INSERT INTO admins (username, password_hash, role) VALUES (?, ?, ?)')
       .run('admin', passwordHash, 'super_admin');
+  } else {
+    db.prepare('UPDATE admins SET password_hash = ?, role = ? WHERE username = ?')
+      .run(passwordHash, 'super_admin', 'admin');
   }
 
   const achievementCount = db.prepare('SELECT COUNT(*) as count FROM achievements').get().count;

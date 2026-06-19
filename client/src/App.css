@@ -1598,6 +1598,15 @@ body {
   max-width: 200px;
 }
 
+.achievement-progress .progress-text {
+  position: static;
+  transform: none;
+  color: var(--color-text-dim);
+  font-size: 0.8rem;
+  text-shadow: none;
+  white-space: nowrap;
+}
+
 .achievement-rewards {
   color: var(--color-gold-light);
   font-size: 0.8rem;
