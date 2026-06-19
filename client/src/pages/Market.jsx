@@ -20,12 +20,25 @@ const QUALITY_COLORS = {
 const ITEM_TYPE_NAMES = {
   consumable: '消耗品',
   material: '材料',
+  equipment: '装备',
+  currency: '货币',
   weapon: '武器',
   helmet: '头盔',
   armor: '衣服',
   boots: '鞋子',
   accessory: '饰品',
-  currency: '货币'
+  pill: '丹药',
+  capture: '捕兽网',
+  tribulation: '渡劫丹'
+}
+
+const getItemTypeName = (item) => {
+  if (!item) return ''
+  const subType = item.subType || item.itemSubType
+  const type = item.type || item.itemType
+  if (subType && ITEM_TYPE_NAMES[subType]) return ITEM_TYPE_NAMES[subType]
+  if (type && ITEM_TYPE_NAMES[type]) return ITEM_TYPE_NAMES[type]
+  return subType || type || ''
 }
 
 export default function Market() {
@@ -366,8 +379,8 @@ export default function Market() {
               {selectedItem.name}
             </div>
             <div className="item-detail-info">
-              <p>类型：{ITEM_TYPE_NAMES[selectedItem.type] || selectedItem.type}</p>
-              <p>品质：{QUALITY_NAMES[selectedItem.quality] || selectedItem.quality}</p>
+              <p>类型：{getItemTypeName(selectedItem)}</p>
+              <p>品质：{QUALITY_NAMES[selectedItem.quality] || selectedItem.quality || '普通'}</p>
               <p>可售数量：{selectedItem.quantity}</p>
               <p>参考单价：{selectedItem.price}金</p>
             </div>
@@ -496,8 +509,8 @@ export default function Market() {
             {selectedListing.itemName}
           </h3>
           <div className="item-detail-info">
-            <p>类型：{ITEM_TYPE_NAMES[selectedListing.itemType] || selectedListing.itemType}</p>
-            <p>品质：{QUALITY_NAMES[selectedListing.itemQuality] || selectedListing.itemQuality}</p>
+            <p>类型：{getItemTypeName(selectedListing)}</p>
+            <p>品质：{QUALITY_NAMES[selectedListing.itemQuality] || selectedListing.itemQuality || '普通'}</p>
             <p>数量：{selectedListing.quantity}</p>
             <p>卖家：{selectedListing.sellerName}</p>
             <p>总价：{selectedListing.price}金</p>

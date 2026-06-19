@@ -1,7 +1,7 @@
 const express = require('express');
 const db = require('../db');
 const { auth } = require('../middleware');
-const { getMapById, getMonsterById, getItemById, getRandomAdventure, getRealmIndex, getRealmByIndex } = require('../gameData');
+const { MAPS, getMapById, getMonsterById, getItemById, getRandomAdventure, getRealmIndex, getRealmByIndex } = require('../gameData');
 
 const router = express.Router();
 

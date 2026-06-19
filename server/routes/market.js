@@ -21,8 +21,8 @@ router.get('/list', auth, (req, res) => {
   let params = [];
 
   if (itemType) {
-    whereClauses.push('item_id IN (SELECT id FROM items WHERE type = ?)');
-    params.push(itemType);
+    whereClauses.push('item_id IN (SELECT id FROM items WHERE type = ? OR sub_type = ?)');
+    params.push(itemType, itemType);
   }
 
   if (quality) {
@@ -40,7 +40,7 @@ router.get('/list', auth, (req, res) => {
   const limit = parseInt(pageSize);
 
   const listings = db.prepare(`
-    SELECT ml.*, c.name as seller_name, i.name as item_name, i.type as item_type, i.quality as item_quality, 
+    SELECT ml.*, c.name as seller_name, i.name as item_name, i.type as item_type, i.sub_type as item_sub_type, i.quality as item_quality, 
            i.description as item_description, i.effect as item_effect, i.stats as item_stats, i.price as base_price
     FROM market_listings ml
     JOIN characters c ON ml.seller_id = c.id
@@ -63,6 +63,7 @@ router.get('/list', auth, (req, res) => {
     itemId: l.item_id,
     itemName: l.item_name,
     itemType: l.item_type,
+    itemSubType: l.item_sub_type,
     itemQuality: l.item_quality,
     itemDescription: l.item_description,
     itemEffect: l.item_effect ? JSON.parse(l.item_effect) : null,
@@ -92,7 +93,7 @@ router.get('/my-listings', auth, (req, res) => {
   }
 
   const listings = db.prepare(`
-    SELECT ml.*, i.name as item_name, i.type as item_type, i.quality as item_quality,
+    SELECT ml.*, i.name as item_name, i.type as item_type, i.sub_type as item_sub_type, i.quality as item_quality,
            i.description as item_description, i.price as base_price
     FROM market_listings ml
     JOIN items i ON ml.item_id = i.id
@@ -105,6 +106,7 @@ router.get('/my-listings', auth, (req, res) => {
     itemId: l.item_id,
     itemName: l.item_name,
     itemType: l.item_type,
+    itemSubType: l.item_sub_type,
     itemQuality: l.item_quality,
     itemDescription: l.item_description,
     basePrice: l.base_price,
