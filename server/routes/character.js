@@ -2,6 +2,7 @@ const express = require('express');
 const db = require('../db');
 const { auth } = require('../middleware');
 const { REALMS, getRealmByIndex, getRealmIndex, getItemById, ITEMS } = require('../gameData');
+const { updateAchievementProgress, updateRealmAchievement, updateGoldAchievement } = require('./achievement');
 
 const router = express.Router();
 
@@ -131,6 +132,7 @@ router.post('/cultivate', auth, (req, res) => {
   `).run(newExp, newLevel, newMaxHp, newMaxMp, newHp, newMp, cultivateCount, character.id);
 
   updateActiveQuestProgress(character.id, 'cultivate', 1);
+  updateAchievementProgress(character.id, 'cultivate', 1);
 
   let canTribulate = false;
   if (nextRealm && newLevel >= nextRealm.levelReq) {
@@ -199,6 +201,7 @@ router.post('/breakthrough', auth, (req, res) => {
     }
 
     updateActiveQuestProgress(character.id, 'breakthrough', 1);
+    updateRealmAchievement(character.id, newRealm);
 
     res.json({
       message: `突破成功！晋升为${newRealm}！`,
@@ -306,6 +309,7 @@ router.post('/tribulation', auth, (req, res) => {
     }
 
     updateActiveQuestProgress(character.id, 'breakthrough', 1);
+    updateRealmAchievement(character.id, newRealm);
 
     res.json({
       message: `天劫降临！${usedItem ? `使用${usedItem.name}，` : ''}成功率${totalSuccessRate.toFixed(1)}%，渡劫成功！晋升为${newRealm}！`,

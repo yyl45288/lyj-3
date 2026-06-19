@@ -111,6 +111,59 @@ db.exec(`
     created_at TEXT DEFAULT (datetime('now')),
     FOREIGN KEY (character_id) REFERENCES characters(id) ON DELETE CASCADE
   );
+
+  CREATE TABLE IF NOT EXISTS admins (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    username TEXT UNIQUE NOT NULL,
+    password_hash TEXT NOT NULL,
+    role TEXT DEFAULT 'admin',
+    created_at TEXT DEFAULT (datetime('now'))
+  );
+
+  CREATE TABLE IF NOT EXISTS achievements (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    name TEXT NOT NULL,
+    description TEXT,
+    type TEXT NOT NULL,
+    target_value INTEGER DEFAULT 1,
+    title TEXT,
+    rewards TEXT,
+    icon TEXT,
+    sort_order INTEGER DEFAULT 0,
+    created_at TEXT DEFAULT (datetime('now'))
+  );
+
+  CREATE TABLE IF NOT EXISTS character_achievements (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    character_id INTEGER NOT NULL,
+    achievement_id INTEGER NOT NULL,
+    progress INTEGER DEFAULT 0,
+    completed INTEGER DEFAULT 0,
+    claimed INTEGER DEFAULT 0,
+    completed_at TEXT,
+    claimed_at TEXT,
+    FOREIGN KEY (character_id) REFERENCES characters(id) ON DELETE CASCADE,
+    FOREIGN KEY (achievement_id) REFERENCES achievements(id) ON DELETE CASCADE,
+    UNIQUE(character_id, achievement_id)
+  );
+
+  CREATE TABLE IF NOT EXISTS sign_in_records (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    character_id INTEGER NOT NULL,
+    sign_date TEXT NOT NULL,
+    is_makeup INTEGER DEFAULT 0,
+    created_at TEXT DEFAULT (datetime('now')),
+    FOREIGN KEY (character_id) REFERENCES characters(id) ON DELETE CASCADE,
+    UNIQUE(character_id, sign_date)
+  );
+
+  CREATE TABLE IF NOT EXISTS sign_in_rewards (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    day_type TEXT NOT NULL,
+    day_number INTEGER,
+    rewards TEXT,
+    sort_order INTEGER DEFAULT 0
+  );
 `);
 
 function seedData() {
@@ -216,6 +269,71 @@ function seedData() {
       }
     });
     insertMany(newItems);
+  }
+
+  const adminCount = db.prepare('SELECT COUNT(*) as count FROM admins').get().count;
+  if (adminCount === 0) {
+    const bcrypt = require('bcryptjs');
+    const passwordHash = bcrypt.hashSync('admin123', 10);
+    db.prepare('INSERT INTO admins (username, password_hash, role) VALUES (?, ?, ?)')
+      .run('admin', passwordHash, 'super_admin');
+  }
+
+  const achievementCount = db.prepare('SELECT COUNT(*) as count FROM achievements').get().count;
+  if (achievementCount === 0) {
+    const defaultAchievements = [
+      { name: '初入仙途', description: '完成第一次修炼', type: 'cultivate', target_value: 1, title: '修仙新手', rewards: JSON.stringify({ gold: 100, exp: 50 }), icon: '🌱', sort_order: 1 },
+      { name: '勤修不辍', description: '累计修炼100次', type: 'cultivate', target_value: 100, title: '勤勉修士', rewards: JSON.stringify({ gold: 500, exp: 200, items: [{ itemId: 5, quantity: 2 }] }), icon: '📚', sort_order: 2 },
+      { name: '修炼狂人', description: '累计修炼1000次', type: 'cultivate', target_value: 1000, title: '修炼狂人', rewards: JSON.stringify({ gold: 2000, exp: 1000, items: [{ itemId: 6, quantity: 5 }] }), icon: '🔥', sort_order: 3 },
+      { name: '初战告捷', description: '击败第一只妖兽', type: 'combat', target_value: 1, title: '初出茅庐', rewards: JSON.stringify({ gold: 50, exp: 30 }), icon: '⚔️', sort_order: 4 },
+      { name: '降妖除魔', description: '累计击败100只妖兽', type: 'combat', target_value: 100, title: '除妖达人', rewards: JSON.stringify({ gold: 1000, exp: 500 }), icon: '🗡️', sort_order: 5 },
+      { name: '百战百胜', description: '累计击败1000只妖兽', type: 'combat', target_value: 1000, title: '百战战神', rewards: JSON.stringify({ gold: 5000, exp: 2000, items: [{ itemId: 103, quantity: 1 }] }), icon: '🏆', sort_order: 6 },
+      { name: '腰缠万贯', description: '累计获得10000金币', type: 'gold', target_value: 10000, title: '富甲一方', rewards: JSON.stringify({ gold: 2000 }), icon: '💰', sort_order: 7 },
+      { name: '筑基成功', description: '突破到筑基期', type: 'realm', target_value: 2, title: '筑基修士', rewards: JSON.stringify({ gold: 500, exp: 200 }), icon: '🌟', sort_order: 8 },
+      { name: '金丹大道', description: '突破到金丹期', type: 'realm', target_value: 3, title: '金丹真人', rewards: JSON.stringify({ gold: 2000, exp: 1000 }), icon: '💫', sort_order: 9 },
+      { name: '元婴出窍', description: '突破到元婴期', type: 'realm', target_value: 4, title: '元婴老祖', rewards: JSON.stringify({ gold: 5000, exp: 3000 }), icon: '✨', sort_order: 10 },
+      { name: '签到达人', description: '累计签到30天', type: 'sign_in', target_value: 30, title: '签到达人', rewards: JSON.stringify({ gold: 1000, items: [{ itemId: 3, quantity: 10 }] }), icon: '📅', sort_order: 11 },
+      { name: '持之以恒', description: '连续签到7天', type: 'consecutive_sign_in', target_value: 7, title: '坚持不懈', rewards: JSON.stringify({ gold: 500, items: [{ itemId: 1, quantity: 5 }] }), icon: '📆', sort_order: 12 },
+      { name: '宠物收集家', description: '捕获第一只宠物', type: 'pet_catch', target_value: 1, title: '宠物新手', rewards: JSON.stringify({ gold: 200 }), icon: '🐾', sort_order: 13 },
+      { name: '任务达人', description: '完成10个任务', type: 'quest_complete', target_value: 10, title: '任务达人', rewards: JSON.stringify({ gold: 800, exp: 400 }), icon: '📜', sort_order: 14 }
+    ];
+
+    const insertAchievement = db.prepare(`
+      INSERT INTO achievements (name, description, type, target_value, title, rewards, icon, sort_order)
+      VALUES (@name, @description, @type, @target_value, @title, @rewards, @icon, @sort_order)
+    `);
+
+    const insertMany = db.transaction((achievements) => {
+      for (const ach of achievements) {
+        insertAchievement.run(ach);
+      }
+    });
+
+    insertMany(defaultAchievements);
+  }
+
+  const signInRewardCount = db.prepare('SELECT COUNT(*) as count FROM sign_in_rewards').get().count;
+  if (signInRewardCount === 0) {
+    const defaultSignInRewards = [
+      { day_type: 'daily', day_number: 1, rewards: JSON.stringify({ gold: 50, exp: 20 }), sort_order: 1 },
+      { day_type: 'consecutive', day_number: 3, rewards: JSON.stringify({ gold: 100, exp: 50, items: [{ itemId: 1, quantity: 2 }] }), sort_order: 2 },
+      { day_type: 'consecutive', day_number: 7, rewards: JSON.stringify({ gold: 300, exp: 150, items: [{ itemId: 3, quantity: 3 }] }), sort_order: 3 },
+      { day_type: 'consecutive', day_number: 15, rewards: JSON.stringify({ gold: 800, exp: 400, items: [{ itemId: 5, quantity: 2 }] }), sort_order: 4 },
+      { day_type: 'consecutive', day_number: 30, rewards: JSON.stringify({ gold: 2000, exp: 1000, items: [{ itemId: 102, quantity: 1 }] }), sort_order: 5 }
+    ];
+
+    const insertReward = db.prepare(`
+      INSERT INTO sign_in_rewards (day_type, day_number, rewards, sort_order)
+      VALUES (@day_type, @day_number, @rewards, @sort_order)
+    `);
+
+    const insertMany = db.transaction((rewards) => {
+      for (const reward of rewards) {
+        insertReward.run(reward);
+      }
+    });
+
+    insertMany(defaultSignInRewards);
   }
 }
 

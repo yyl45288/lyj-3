@@ -137,3 +137,86 @@ export const tribulationAPI = {
       body: itemId ? JSON.stringify({ itemId }) : '{}'
     })
 }
+
+export const achievementAPI = {
+  getAchievements: () => request('/achievements'),
+  claimReward: (achievementId) =>
+    request(`/achievements/claim/${achievementId}`, {
+      method: 'POST'
+    })
+}
+
+export const signInAPI = {
+  getInfo: () => request('/sign-in/info'),
+  signIn: () =>
+    request('/sign-in/sign', {
+      method: 'POST'
+    }),
+  makeup: (date) =>
+    request('/sign-in/makeup', {
+      method: 'POST',
+      body: JSON.stringify({ date })
+    })
+}
+
+export const adminAPI = {
+  login: (username, password) =>
+    request('/admin/login', {
+      method: 'POST',
+      body: JSON.stringify({ username, password })
+    }),
+  getMe: () => request('/admin/me'),
+  getStats: () => request('/admin/stats'),
+  getItems: (params) => {
+    const query = new URLSearchParams(params).toString()
+    return request(`/admin/items?${query}`)
+  },
+  createItem: (data) =>
+    request('/admin/items', {
+      method: 'POST',
+      body: JSON.stringify(data)
+    }),
+  updateItem: (id, data) =>
+    request(`/admin/items/${id}`, {
+      method: 'PUT',
+      body: JSON.stringify(data)
+    }),
+  deleteItem: (id) =>
+    request(`/admin/items/${id}`, {
+      method: 'DELETE'
+    }),
+  getAchievements: () => request('/admin/achievements'),
+  createAchievement: (data) =>
+    request('/admin/achievements', {
+      method: 'POST',
+      body: JSON.stringify(data)
+    }),
+  updateAchievement: (id, data) =>
+    request(`/admin/achievements/${id}`, {
+      method: 'PUT',
+      body: JSON.stringify(data)
+    }),
+  deleteAchievement: (id) =>
+    request(`/admin/achievements/${id}`, {
+      method: 'DELETE'
+    }),
+  getSignInRewards: () => request('/admin/sign-in-rewards'),
+  createSignInReward: (data) =>
+    request('/admin/sign-in-rewards', {
+      method: 'POST',
+      body: JSON.stringify(data)
+    }),
+  updateSignInReward: (id, data) =>
+    request(`/admin/sign-in-rewards/${id}`, {
+      method: 'PUT',
+      body: JSON.stringify(data)
+    }),
+  deleteSignInReward: (id) =>
+    request(`/admin/sign-in-rewards/${id}`, {
+      method: 'DELETE'
+    }),
+  getUsers: (params) => {
+    const query = new URLSearchParams(params).toString()
+    return request(`/admin/users?${query}`)
+  }
+}

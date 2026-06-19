@@ -14,6 +14,8 @@ import Quest from './pages/Quest'
 import Map from './pages/Map'
 import Battle from './pages/Battle'
 import Pet from './pages/Pet'
+import Achievement from './pages/Achievement'
+import SignIn from './pages/SignIn'
 
 function AuthGuard({ children }) {
   const { user, loading } = useAuth()
@@ -60,6 +62,8 @@ function GameLayout() {
         <div className="nav-brand">修仙录</div>
         <div className="nav-links">
           <NavLink to="/" end>首页</NavLink>
+          <NavLink to="/sign-in">签到</NavLink>
+          <NavLink to="/achievements">成就</NavLink>
           <NavLink to="/character">角色</NavLink>
           <NavLink to="/cultivate">修炼</NavLink>
           <NavLink to="/maps">探索</NavLink>
@@ -102,6 +106,8 @@ function AppRoutes() {
         <AuthGuard><CharacterGuard><GameLayout /></CharacterGuard></AuthGuard>
       }>
         <Route path="/" element={<GameHome />} />
+        <Route path="/sign-in" element={<SignIn />} />
+        <Route path="/achievements" element={<Achievement />} />
         <Route path="/character" element={<Character />} />
         <Route path="/cultivate" element={<Cultivate />} />
         <Route path="/maps" element={<Map />} />

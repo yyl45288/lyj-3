@@ -2,6 +2,7 @@ const express = require('express');
 const db = require('../db');
 const { auth } = require('../middleware');
 const { getQuestById, getItemById } = require('../gameData');
+const { updateAchievementProgress, updateGoldAchievement } = require('./achievement');
 
 const router = express.Router();
 
@@ -192,7 +193,12 @@ router.post('/complete', auth, (req, res) => {
 
   transaction();
 
+  updateAchievementProgress(character.id, 'quest_complete', 1);
+
   const updatedChar = db.prepare('SELECT * FROM characters WHERE id = ?').get(character.id);
+  if (rewards.gold) {
+    updateGoldAchievement(character.id, updatedChar.gold);
+  }
 
   res.json({
     message: `完成任务：${questData.name}！`,

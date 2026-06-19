@@ -2,6 +2,7 @@ const express = require('express');
 const db = require('../db');
 const { auth } = require('../middleware');
 const { getMonsterById, getPetById, getItemById, getRealmIndex, getRealmByIndex, calculatePetStats } = require('../gameData');
+const { updateAchievementProgress, updateGoldAchievement } = require('./achievement');
 
 const router = express.Router();
 
@@ -211,6 +212,8 @@ router.post('/capture', auth, (req, res) => {
         INSERT INTO battle_logs (character_id, monster_id, result, exp_gained, gold_gained, pet_caught)
         VALUES (?, ?, 'captured', ?, ?, 1)
       `).run(character.id, monster.id, 0, 0);
+
+      updateAchievementProgress(character.id, 'pet_catch', 1);
 
       db.prepare('DELETE FROM active_battles WHERE character_id = ?').run(character.id);
 
@@ -459,6 +462,8 @@ function handleVictory(character, activeBattle, monster) {
   `).run(character.id, monster.id, expGained, goldGained);
 
   updateActiveQuestProgress(character.id, 'combat', 1);
+  updateAchievementProgress(character.id, 'combat', 1);
+  updateGoldAchievement(character.id, newGold);
 
   return {
     type: 'victory',
