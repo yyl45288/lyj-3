@@ -241,6 +241,37 @@ export const adventureAPI = {
   }
 }
 
+export const afkAPI = {
+  getStatus: () => request('/afk/status'),
+  startAfk: () =>
+    request('/afk/start', { method: 'POST' }),
+  stopAfk: () =>
+    request('/afk/stop', { method: 'POST' }),
+  collectRewards: () =>
+    request('/afk/collect', { method: 'POST' })
+}
+
+export const friendAPI = {
+  getFriends: () => request('/friends/list'),
+  getRequests: () => request('/friends/requests'),
+  sendRequest: (receiverName, message) =>
+    request('/friends/request', {
+      method: 'POST',
+      body: JSON.stringify({ receiverName, message })
+    }),
+  acceptRequest: (requestId) =>
+    request(`/friends/accept/${requestId}`, { method: 'POST' }),
+  rejectRequest: (requestId) =>
+    request(`/friends/reject/${requestId}`, { method: 'POST' }),
+  deleteFriend: (friendId) =>
+    request(`/friends/${friendId}`, { method: 'DELETE' }),
+  heartbeat: () =>
+    request('/friends/heartbeat', { method: 'POST' }),
+  search: (keyword) =>
+    request(`/friends/search?keyword=${encodeURIComponent(keyword)}`),
+  getOnlineCount: () => request('/friends/online-count')
+}
+
 export const adminAPI = {
   login: (username, password) =>
     request('/admin/login', {
@@ -249,6 +280,12 @@ export const adminAPI = {
     }),
   getMe: () => request('/admin/me'),
   getStats: () => request('/admin/stats'),
+  getAfkConfig: () => request('/admin/afk-config'),
+  updateAfkConfig: (key, configValue, description) =>
+    request(`/admin/afk-config/${key}`, {
+      method: 'PUT',
+      body: JSON.stringify({ configValue, description })
+    }),
   getItems: (params) => {
     const query = new URLSearchParams(params).toString()
     return request(`/admin/items?${query}`)

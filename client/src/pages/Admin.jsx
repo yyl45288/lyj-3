@@ -11,6 +11,12 @@ export default function Admin() {
   const [skills, setSkills] = useState([])
   const [dungeons, setDungeons] = useState([])
   const [titles, setTitles] = useState([])
+  const [afkConfig, setAfkConfig] = useState([])
+  const [editingAfkConfig, setEditingAfkConfig] = useState(null)
+  const [showAfkModal, setShowAfkModal] = useState(false)
+  const [afkConfigForm, setAfkConfigForm] = useState({
+    config_key: '', config_value: '', description: ''
+  })
   const [loading, setLoading] = useState(false)
   const [message, setMessage] = useState('')
   const [messageType, setMessageType] = useState('success')
@@ -63,6 +69,7 @@ export default function Admin() {
     { key: 'dungeons', label: '副本管理', icon: '🏰' },
     { key: 'titles', label: '称号管理', icon: '🏅' },
     { key: 'rewards', label: '签到奖励', icon: '🎁' },
+    { key: 'afk', label: '挂机配置', icon: '⏰' },
     { key: 'users', label: '用户列表', icon: '👥' },
   ]
 
@@ -118,6 +125,11 @@ export default function Admin() {
         case 'titles': {
           const data = await adminAPI.getTitles()
           setTitles(data.titles || data || [])
+          break
+        }
+        case 'afk': {
+          const data = await adminAPI.getAfkConfig()
+          setAfkConfig(data.configs || data || [])
           break
         }
       }
@@ -472,6 +484,44 @@ export default function Admin() {
     }
   }
 
+  const openEditAfkConfig = (config) => {
+    setEditingAfkConfig(config)
+    setAfkConfigForm({
+      config_key: config.config_key || '',
+      config_value: config.config_value || '',
+      description: config.description || ''
+    })
+    setShowAfkModal(true)
+  }
+
+  const saveAfkConfig = async () => {
+    if (!afkConfigForm.config_key || afkConfigForm.config_value === '') {
+      showMsg('请填写配置键和配置值', 'error')
+      return
+    }
+    try {
+      await adminAPI.updateAfkConfig(
+        afkConfigForm.config_key,
+        afkConfigForm.config_value,
+        afkConfigForm.description
+      )
+      showMsg('挂机配置更新成功')
+      setShowAfkModal(false)
+      loadTabData('afk')
+    } catch (err) {
+      showMsg(err.message || '保存失败', 'error')
+    }
+  }
+
+  const afkConfigLabel = (key) => ({
+    exp_per_minute: '每分钟经验值',
+    gold_per_minute: '每分钟金币',
+    max_offline_hours: '最大离线累计时间(小时)',
+    level_multiplier: '等级加成系数',
+    realm_multiplier: '境界加成系数',
+    min_collect_minutes: '最小领取间隔(分钟)'
+  })[key] || key
+
   const addRewardItem = () => {
     setAchForm({
       ...achForm,
@@ -534,6 +584,7 @@ export default function Admin() {
                 <div className="stat-item"><div className="stat-value">{stats.titleCount || 0}</div><div className="stat-label">称号数</div></div>
                 <div className="stat-item"><div className="stat-value">{stats.todaySignIns || 0}</div><div className="stat-label">今日签到</div></div>
                 <div className="stat-item"><div className="stat-value">{stats.totalSignIns || 0}</div><div className="stat-label">累计签到</div></div>
+                <div className="stat-item"><div className="stat-value">{stats.onlineCount || 0}</div><div className="stat-label">当前在线</div></div>
               </div>
             </div>
           )}
@@ -725,6 +776,34 @@ export default function Admin() {
                         <td>{r.day_type === 'daily' ? '-' : r.day_number}</td>
                         <td style={{ color: '#f0d878' }}>
                           {typeof r.rewards === 'string' ? r.rewards : JSON.stringify(r.rewards || {})}
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          )}
+
+          {activeTab === 'afk' && (
+            <div>
+              <div className="card-title">挂机修炼配置</div>
+              <div className="admin-table">
+                <table>
+                  <thead><tr>
+                    <th>ID</th><th>配置项</th><th>配置键</th><th>当前值</th><th>说明</th><th>更新时间</th><th>操作</th>
+                  </tr></thead>
+                  <tbody>
+                    {afkConfig.map(config => (
+                      <tr key={config.id}>
+                        <td>{config.id}</td>
+                        <td style={{ fontWeight: 700 }}>{afkConfigLabel(config.config_key)}</td>
+                        <td style={{ color: '#888', fontFamily: 'monospace', fontSize: '0.85rem' }}>{config.config_key}</td>
+                        <td style={{ color: '#7ec8e3', fontWeight: 700 }}>{config.config_value}</td>
+                        <td style={{ color: '#aaa', fontSize: '0.85rem' }}>{config.description || '-'}</td>
+                        <td style={{ fontSize: '0.8rem', color: '#888' }}>{config.updated_at ? new Date(config.updated_at).toLocaleString() : '-'}</td>
+                        <td>
+                          <button className="btn-primary" style={{ padding: '0.3rem 0.8rem', fontSize: '0.8rem' }} onClick={() => openEditAfkConfig(config)}>编辑</button>
                         </td>
                       </tr>
                     ))}
@@ -976,6 +1055,34 @@ export default function Admin() {
             <div className="modal-actions">
               <button className="btn-primary" onClick={() => setShowTitleModal(false)}>取消</button>
               <button className="btn-primary" onClick={saveTitle}>保存</button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {showAfkModal && (
+        <div className="modal-overlay" onClick={() => setShowAfkModal(false)}>
+          <div className="modal-card" onClick={e => e.stopPropagation()}>
+            <div className="modal-title">编辑挂机配置</div>
+            <div className="form-group">
+              <label>配置项</label>
+              <input type="text" value={afkConfigLabel(afkConfigForm.config_key)} disabled style={{ background: 'rgba(10,10,26,0.5)', color: '#888' }} />
+            </div>
+            <div className="form-group">
+              <label>配置键</label>
+              <input type="text" value={afkConfigForm.config_key} disabled style={{ background: 'rgba(10,10,26,0.5)', color: '#888', fontFamily: 'monospace' }} />
+            </div>
+            <div className="form-group">
+              <label>配置值 *</label>
+              <input type="text" value={afkConfigForm.config_value} onChange={e => setAfkConfigForm({ ...afkConfigForm, config_value: e.target.value })} placeholder="请输入配置值" />
+            </div>
+            <div className="form-group">
+              <label>说明</label>
+              <input type="text" value={afkConfigForm.description} onChange={e => setAfkConfigForm({ ...afkConfigForm, description: e.target.value })} placeholder="配置说明" />
+            </div>
+            <div className="modal-actions">
+              <button className="btn-primary" onClick={() => setShowAfkModal(false)}>取消</button>
+              <button className="btn-primary" onClick={saveAfkConfig}>保存</button>
             </div>
           </div>
         </div>

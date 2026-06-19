@@ -317,6 +317,57 @@ db.exec(`
     created_at TEXT DEFAULT (datetime('now')),
     FOREIGN KEY (character_id) REFERENCES characters(id) ON DELETE CASCADE
   );
+
+  CREATE TABLE IF NOT EXISTS afk_config (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    config_key TEXT UNIQUE NOT NULL,
+    config_value TEXT NOT NULL,
+    description TEXT,
+    updated_at TEXT DEFAULT (datetime('now'))
+  );
+
+  CREATE TABLE IF NOT EXISTS character_afk (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    character_id INTEGER NOT NULL UNIQUE,
+    is_active INTEGER DEFAULT 0,
+    start_time TEXT,
+    last_collect_time TEXT,
+    total_offline_seconds INTEGER DEFAULT 0,
+    pending_exp INTEGER DEFAULT 0,
+    pending_gold INTEGER DEFAULT 0,
+    FOREIGN KEY (character_id) REFERENCES characters(id) ON DELETE CASCADE
+  );
+
+  CREATE TABLE IF NOT EXISTS friends (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    character_id INTEGER NOT NULL,
+    friend_id INTEGER NOT NULL,
+    created_at TEXT DEFAULT (datetime('now')),
+    FOREIGN KEY (character_id) REFERENCES characters(id) ON DELETE CASCADE,
+    FOREIGN KEY (friend_id) REFERENCES characters(id) ON DELETE CASCADE,
+    UNIQUE(character_id, friend_id)
+  );
+
+  CREATE TABLE IF NOT EXISTS friend_requests (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    sender_id INTEGER NOT NULL,
+    receiver_id INTEGER NOT NULL,
+    status TEXT DEFAULT 'pending',
+    message TEXT,
+    created_at TEXT DEFAULT (datetime('now')),
+    FOREIGN KEY (sender_id) REFERENCES characters(id) ON DELETE CASCADE,
+    FOREIGN KEY (receiver_id) REFERENCES characters(id) ON DELETE CASCADE,
+    UNIQUE(sender_id, receiver_id)
+  );
+
+  CREATE TABLE IF NOT EXISTS user_online (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    user_id INTEGER NOT NULL UNIQUE,
+    character_id INTEGER,
+    last_heartbeat TEXT DEFAULT (datetime('now')),
+    is_online INTEGER DEFAULT 1,
+    FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+  );
 `);
 
   try {
@@ -570,6 +621,31 @@ function seedData() {
     });
 
     insertMany(defaultSkills);
+  }
+
+  const afkConfigCount = db.prepare('SELECT COUNT(*) as count FROM afk_config').get().count;
+  if (afkConfigCount === 0) {
+    const defaultAfkConfig = [
+      { config_key: 'exp_per_minute', config_value: '5', description: '每分钟获得的经验值' },
+      { config_key: 'gold_per_minute', config_value: '2', description: '每分钟获得的金币' },
+      { config_key: 'max_offline_hours', config_value: '12', description: '最大离线累计时间（小时）' },
+      { config_key: 'level_multiplier', config_value: '0.1', description: '等级加成系数（每级增加的百分比）' },
+      { config_key: 'realm_multiplier', config_value: '0.5', description: '境界加成系数（每境界增加的百分比）' },
+      { config_key: 'min_collect_minutes', config_value: '1', description: '最小领取间隔（分钟）' }
+    ];
+
+    const insertConfig = db.prepare(`
+      INSERT INTO afk_config (config_key, config_value, description)
+      VALUES (@config_key, @config_value, @description)
+    `);
+
+    const insertMany = db.transaction((configs) => {
+      for (const config of configs) {
+        insertConfig.run(config);
+      }
+    });
+
+    insertMany(defaultAfkConfig);
   }
 
   const dungeonCount = db.prepare('SELECT COUNT(*) as count FROM dungeons').get().count;

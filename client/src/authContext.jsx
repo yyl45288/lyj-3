@@ -42,12 +42,7 @@ export function AuthProvider({ children }) {
     localStorage.setItem('isAdmin', adminFlag ? 'true' : 'false')
     setToken(newToken)
     setIsAdmin(adminFlag)
-    if (adminFlag) {
-      setUser(userData)
-    } else {
-      const meData = await authAPI.getMe()
-      setUser(meData.user || meData)
-    }
+    setUser(userData)
   }
 
   const logout = () => {

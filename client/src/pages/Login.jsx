@@ -16,7 +16,8 @@ export default function Login() {
     setLoading(true)
     try {
       await login(username, password)
-      if (useAuth().isAdmin || localStorage.getItem('isAdmin') === 'true') {
+      const adminFlag = localStorage.getItem('isAdmin') === 'true'
+      if (adminFlag) {
         navigate('/admin')
       } else {
         navigate('/')

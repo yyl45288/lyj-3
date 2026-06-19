@@ -16,6 +16,8 @@ const skillRoutes = require('./routes/skills');
 const dungeonRoutes = require('./routes/dungeons');
 const marketRoutes = require('./routes/market');
 const adventureRoutes = require('./routes/adventure');
+const afkRoutes = require('./routes/afk');
+const friendRoutes = require('./routes/friends');
 
 const app = express();
 const PORT = 3001;
@@ -38,6 +40,8 @@ app.use('/api/skills', skillRoutes);
 app.use('/api/dungeons', dungeonRoutes);
 app.use('/api/market', marketRoutes);
 app.use('/api/adventures', adventureRoutes);
+app.use('/api/afk', afkRoutes);
+app.use('/api/friends', friendRoutes);
 
 app.use((err, req, res, next) => {
   console.error(err.stack);

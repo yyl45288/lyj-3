@@ -516,6 +516,30 @@ router.delete('/titles/:id', adminAuth, (req, res) => {
   res.json({ message: '称号删除成功' });
 });
 
+router.get('/afk-config', adminAuth, (req, res) => {
+  const configs = db.prepare('SELECT * FROM afk_config ORDER BY id').all();
+  res.json({ configs });
+});
+
+router.put('/afk-config/:key', adminAuth, (req, res) => {
+  const { key } = req.params;
+  const { configValue, description } = req.body;
+
+  const existing = db.prepare('SELECT * FROM afk_config WHERE config_key = ?').get(key);
+  if (!existing) {
+    return res.status(404).json({ error: '配置项不存在' });
+  }
+
+  db.prepare(`
+    UPDATE afk_config 
+    SET config_value = ?, description = ?, updated_at = datetime('now')
+    WHERE config_key = ?
+  `).run(configValue, description || existing.description, key);
+
+  const config = db.prepare('SELECT * FROM afk_config WHERE config_key = ?').get(key);
+  res.json({ message: '配置更新成功', config });
+});
+
 router.get('/stats', adminAuth, (req, res) => {
   const userCount = db.prepare('SELECT COUNT(*) as count FROM users').get().count;
   const characterCount = db.prepare('SELECT COUNT(*) as count FROM characters').get().count;
@@ -524,6 +548,10 @@ router.get('/stats', adminAuth, (req, res) => {
   const skillCount = db.prepare('SELECT COUNT(*) as count FROM skills').get().count;
   const dungeonCount = db.prepare('SELECT COUNT(*) as count FROM dungeons').get().count;
   const titleCount = db.prepare('SELECT COUNT(*) as count FROM titles').get().count;
+  const onlineCount = db.prepare(`
+    SELECT COUNT(*) as count FROM user_online 
+    WHERE is_online = 1 AND datetime(last_heartbeat) > datetime('now', '-5 minutes')
+  `).get().count;
 
   res.json({
     stats: {
@@ -533,7 +561,8 @@ router.get('/stats', adminAuth, (req, res) => {
       achievementCount,
       skillCount,
       dungeonCount,
-      titleCount
+      titleCount,
+      onlineCount
     }
   });
 });

@@ -22,6 +22,8 @@ import Skills from './pages/Skills'
 import Dungeons from './pages/Dungeons'
 import Market from './pages/Market'
 import Adventure from './pages/Adventure'
+import AfkCultivate from './pages/AfkCultivate'
+import Friends from './pages/Friends'
 
 function AuthGuard({ children }) {
   const { user, loading } = useAuth()
@@ -117,6 +119,8 @@ function GameLayout() {
           <NavLink to="/skills">技能</NavLink>
           <NavLink to="/character">角色</NavLink>
           <NavLink to="/cultivate">修炼</NavLink>
+          <NavLink to="/afk">挂机</NavLink>
+          <NavLink to="/friends">好友</NavLink>
           <NavLink to="/maps">探索</NavLink>
           <NavLink to="/dungeons">副本</NavLink>
           <NavLink to="/pets">宠物</NavLink>
@@ -172,6 +176,8 @@ function AppRoutes() {
         <Route path="/skills" element={<Skills />} />
         <Route path="/character" element={<Character />} />
         <Route path="/cultivate" element={<Cultivate />} />
+        <Route path="/afk" element={<AfkCultivate />} />
+        <Route path="/friends" element={<Friends />} />
         <Route path="/maps" element={<Map />} />
         <Route path="/dungeons" element={<Dungeons />} />
         <Route path="/battle" element={<Battle />} />
