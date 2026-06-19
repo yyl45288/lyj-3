@@ -716,6 +716,328 @@ body {
   margin-top: 0.5rem;
 }
 
+.filter-bar {
+  display: flex;
+  align-items: center;
+  gap: 0.8rem;
+  margin-bottom: 1rem;
+  flex-wrap: wrap;
+}
+
+.filter-select {
+  padding: 0.4rem 0.8rem;
+  border: 1px solid rgba(126, 200, 227, 0.3);
+  border-radius: 4px;
+  background: rgba(10, 10, 26, 0.8);
+  color: var(--color-text);
+  font-size: 0.9rem;
+}
+
+.filter-select:focus {
+  outline: none;
+  border-color: var(--color-gold);
+}
+
+.listings-count {
+  color: var(--color-text-dim);
+  font-size: 0.85rem;
+  margin-left: auto;
+}
+
+.sell-page {
+  display: grid;
+  grid-template-columns: 1fr 350px;
+  gap: 1.5rem;
+}
+
+.sell-inventory h3,
+.sell-form h3 {
+  color: var(--color-gold);
+  margin-bottom: 0.8rem;
+}
+
+.item-detail-card {
+  background: rgba(10, 10, 26, 0.6);
+  border: 1px solid rgba(126, 200, 227, 0.15);
+  border-radius: 6px;
+  padding: 1rem;
+}
+
+.item-detail-name {
+  font-size: 1.1rem;
+  font-weight: 700;
+  margin-bottom: 0.8rem;
+  padding-bottom: 0.5rem;
+  border-bottom: 1px solid rgba(126, 200, 227, 0.15);
+}
+
+.item-detail-info {
+  color: var(--color-text-dim);
+  font-size: 0.9rem;
+  line-height: 1.8;
+  margin-bottom: 1rem;
+}
+
+.item-detail-info p {
+  margin: 0.2rem 0;
+}
+
+.form-group {
+  margin-bottom: 0.8rem;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+}
+
+.form-group label {
+  color: var(--color-text-dim);
+  font-size: 0.9rem;
+  min-width: 6rem;
+}
+
+.form-input {
+  flex: 1;
+  min-width: 100px;
+  padding: 0.4rem 0.6rem;
+  border: 1px solid rgba(126, 200, 227, 0.3);
+  border-radius: 4px;
+  background: rgba(10, 10, 26, 0.8);
+  color: var(--color-text);
+  font-size: 0.9rem;
+}
+
+.form-input:focus {
+  outline: none;
+  border-color: var(--color-gold);
+}
+
+.form-hint {
+  color: var(--color-text-dim);
+  font-size: 0.8rem;
+  width: 100%;
+  padding-left: 6.5rem;
+}
+
+.pagination {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 1rem;
+  margin-top: 1.5rem;
+}
+
+.pagination span {
+  color: var(--color-text-dim);
+  font-size: 0.9rem;
+}
+
+.record-tabs {
+  display: flex;
+  gap: 0.5rem;
+}
+
+.adventure-card {
+  background: rgba(10, 10, 26, 0.7);
+  border: 2px solid var(--color-epic);
+  border-radius: 8px;
+  padding: 1.5rem;
+  max-width: 600px;
+  margin: 0 auto;
+  box-shadow: 0 0 20px rgba(163, 53, 238, 0.2);
+}
+
+.adventure-header {
+  text-align: center;
+  margin-bottom: 1rem;
+  padding-bottom: 0.8rem;
+  border-bottom: 1px solid rgba(126, 200, 227, 0.15);
+}
+
+.adventure-rarity {
+  font-size: 0.9rem;
+  font-weight: 600;
+}
+
+.adventure-name {
+  font-size: 1.5rem;
+  color: var(--color-gold);
+  margin-top: 0.5rem;
+}
+
+.adventure-desc {
+  color: var(--color-text);
+  line-height: 1.8;
+  margin-bottom: 1.5rem;
+  text-align: center;
+  font-size: 1rem;
+}
+
+.adventure-choices {
+  display: flex;
+  flex-direction: column;
+  gap: 0.8rem;
+}
+
+.adventure-choices h4 {
+  color: var(--color-text-dim);
+  font-weight: 500;
+  margin-bottom: 0.3rem;
+}
+
+.adventure-choice-btn {
+  width: 100%;
+  padding: 0.8rem 1rem;
+  background: rgba(126, 200, 227, 0.1);
+  border: 1px solid rgba(126, 200, 227, 0.3);
+  border-radius: 6px;
+  color: var(--color-text);
+  font-size: 0.95rem;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  text-align: left;
+}
+
+.adventure-choice-btn:hover {
+  background: rgba(126, 200, 227, 0.2);
+  border-color: var(--color-gold);
+  transform: translateX(4px);
+}
+
+.adventure-result {
+  text-align: center;
+  max-width: 500px;
+  margin: 0 auto;
+  background: rgba(10, 10, 26, 0.6);
+  border: 1px solid var(--color-gold);
+  border-radius: 8px;
+  padding: 1.5rem;
+}
+
+.adventure-result h3 {
+  color: var(--color-gold);
+  margin-bottom: 1rem;
+}
+
+.result-message {
+  color: var(--color-text);
+  font-size: 1.05rem;
+  line-height: 1.8;
+  margin-bottom: 1rem;
+}
+
+.result-details {
+  margin-bottom: 1.5rem;
+}
+
+.reward-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.3rem;
+}
+
+.reward-item {
+  color: var(--color-gold-light);
+  font-size: 0.95rem;
+}
+
+.item-detail-panel {
+  position: fixed;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  background: rgba(10, 10, 26, 0.95);
+  border: 1px solid var(--color-gold);
+  border-radius: 8px;
+  padding: 1.5rem;
+  min-width: 320px;
+  max-width: 90%;
+  z-index: 100;
+  box-shadow: 0 4px 30px rgba(0, 0, 0, 0.5);
+}
+
+.item-detail {
+  position: relative;
+}
+
+.close-btn {
+  position: absolute;
+  top: 0;
+  right: 0;
+  background: rgba(126, 200, 227, 0.1);
+  border: 1px solid rgba(126, 200, 227, 0.3);
+  color: var(--color-text-dim);
+  padding: 0.2rem 0.6rem;
+  font-size: 0.8rem;
+  cursor: pointer;
+  border-radius: 4px;
+}
+
+.close-btn:hover {
+  color: var(--color-text);
+  border-color: var(--color-gold);
+}
+
+.item-detail-desc {
+  color: var(--color-text-dim);
+  font-size: 0.85rem;
+  margin: 0.8rem 0;
+  padding: 0.6rem;
+  background: rgba(0, 0, 0, 0.3);
+  border-radius: 4px;
+}
+
+.btn-danger {
+  background: rgba(255, 80, 80, 0.15);
+  border-color: rgba(255, 80, 80, 0.4);
+  color: #ff6b6b;
+}
+
+.btn-danger:hover {
+  background: rgba(255, 80, 80, 0.25);
+  border-color: rgba(255, 80, 80, 0.6);
+}
+
+.character-stats {
+  display: flex;
+  gap: 1.5rem;
+  margin-bottom: 1rem;
+  padding: 0.5rem 1rem;
+  background: rgba(10, 10, 26, 0.5);
+  border-radius: 4px;
+  font-size: 0.9rem;
+}
+
+.character-stats .gold {
+  color: var(--color-gold);
+  font-weight: 600;
+}
+
+.character-stats .hp {
+  color: #ff6b6b;
+  font-weight: 600;
+}
+
+.character-stats .mp {
+  color: #6bb5ff;
+  font-weight: 600;
+}
+
+.inventory-item.selected {
+  border-color: var(--color-gold);
+  box-shadow: 0 0 10px rgba(212, 175, 55, 0.4);
+}
+
+.quality-common { color: #ffffff; }
+.quality-uncommon { color: #1eff00; }
+.quality-rare { color: #0070dd; }
+.quality-epic { color: #a335ee; }
+.quality-legendary { color: #ff8000; }
+
+:root {
+  --color-epic: #a335ee;
+}
+
 @media (max-width: 768px) {
   .game-nav {
     padding: 0 0.8rem;
@@ -898,6 +1220,11 @@ body {
 
 .log-explore {
   color: var(--color-success);
+}
+
+.log-adventure {
+  color: var(--color-epic);
+  font-weight: 700;
 }
 
 .battle-page {

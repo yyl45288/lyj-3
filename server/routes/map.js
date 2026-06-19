@@ -1,7 +1,7 @@
 const express = require('express');
 const db = require('../db');
 const { auth } = require('../middleware');
-const { MAPS, getMapById, getMonsterById, getItemById } = require('../gameData');
+const { getMapById, getMonsterById, getItemById, getRandomAdventure, getRealmIndex, getRealmByIndex } = require('../gameData');
 
 const router = express.Router();
 
@@ -40,6 +40,51 @@ router.post('/explore/:mapId', auth, (req, res) => {
 
   if (character.hp <= 0) {
     return res.status(400).json({ error: '生命值为0，无法探索，请先恢复' });
+  }
+
+  const adventureChance = 0.15;
+  const adventureRand = Math.random();
+
+  if (adventureRand < adventureChance) {
+    const adventure = getRandomAdventure(map.id);
+    if (adventure) {
+      const existingAdv = db.prepare('SELECT id FROM active_adventures WHERE character_id = ?').get(character.id);
+      if (existingAdv) {
+        db.prepare('DELETE FROM active_adventures WHERE character_id = ?').run(character.id);
+      }
+
+      db.prepare(`
+        INSERT INTO active_adventures (character_id, adventure_id, map_id)
+        VALUES (?, ?, ?)
+      `).run(character.id, adventure.id, map.id);
+
+      db.prepare('INSERT INTO exploration_logs (character_id, map_id, action) VALUES (?, ?, ?)')
+        .run(character.id, map.id, 'adventure');
+
+      const result = {
+        type: 'adventure',
+        message: `触发奇遇：${adventure.name}！`,
+        adventure: {
+          id: adventure.id,
+          name: adventure.name,
+          description: adventure.description,
+          rarity: adventure.rarity,
+          choices: adventure.choices.map((c, i) => ({
+            index: i,
+            text: c.text
+          }))
+        }
+      };
+
+      const updatedCharacter = db.prepare('SELECT * FROM characters WHERE user_id = ?').get(req.user.id);
+      return res.json({
+        result,
+        character: {
+          ...updatedCharacter,
+          expToNext: updatedCharacter.level * 100
+        }
+      });
+    }
   }
 
   const rand = Math.random();
@@ -117,7 +162,6 @@ router.post('/explore/:mapId', auth, (req, res) => {
     const newExp = character.exp + baseExp;
 
     const expForLevel = character.level * 100;
-    const { getRealmIndex, getRealmByIndex } = require('../gameData');
     const realmIndex = getRealmIndex(character.realm);
     const nextRealm = getRealmByIndex(realmIndex + 1);
     const maxLevel = nextRealm ? nextRealm.levelReq : 999;

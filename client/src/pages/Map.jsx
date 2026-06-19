@@ -1,6 +1,18 @@
 import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { mapAPI, characterAPI, battleAPI } from '../api'
+import { mapAPI, characterAPI, battleAPI, adventureAPI } from '../api'
+
+const RARITY_NAMES = {
+  common: '普通',
+  rare: '稀有',
+  epic: '史诗'
+}
+
+const RARITY_COLORS = {
+  common: '#1eff00',
+  rare: '#0070dd',
+  epic: '#a335ee'
+}
 
 export default function Map() {
   const [maps, setMaps] = useState([])
@@ -9,18 +21,24 @@ export default function Map() {
   const [logs, setLogs] = useState([])
   const [message, setMessage] = useState('')
   const [activeBattle, setActiveBattle] = useState(null)
+  const [activeAdventure, setActiveAdventure] = useState(null)
+  const [adventureResult, setAdventureResult] = useState(null)
   const navigate = useNavigate()
 
   const fetchData = () => {
     Promise.all([
       mapAPI.getMaps(),
       characterAPI.getCharacter(),
-      battleAPI.getBattle()
-    ]).then(([mapData, charData, battleData]) => {
+      battleAPI.getBattle(),
+      adventureAPI.getActive().catch(() => ({ adventure: null }))
+    ]).then(([mapData, charData, battleData, advData]) => {
       setMaps(mapData.maps || [])
       setCharacter(charData.character || charData)
       if (battleData.battle) {
         setActiveBattle(battleData.battle)
+      }
+      if (advData && advData.adventure) {
+        setActiveAdventure(advData.adventure)
       }
     }).catch(() => {})
   }
@@ -55,6 +73,11 @@ export default function Map() {
         setTimeout(() => navigate('/battle'), 500)
       }
 
+      if (result.type === 'adventure') {
+        setActiveAdventure(result.adventure)
+        setMessage(`触发奇遇：${result.adventure.name}！`)
+      }
+
       setCharacter(data.character)
       if (result.type === 'encounter') {
         setMessage(`遭遇了${result.monster.name}！`)
@@ -63,6 +86,26 @@ export default function Map() {
       setMessage(err.message || '探索失败')
     } finally {
       setExploring(false)
+    }
+  }
+
+  const handleAdventureChoice = async (choiceIndex) => {
+    try {
+      const data = await adventureAPI.makeChoice(choiceIndex)
+      setAdventureResult(data)
+      setActiveAdventure(null)
+      setCharacter(data.character)
+      setMessage(data.message)
+
+      const newLog = {
+        id: Date.now(),
+        text: `奇遇：${data.message}`,
+        type: 'adventure',
+        time: new Date().toLocaleTimeString()
+      }
+      setLogs((prev) => [newLog, ...prev].slice(0, 10))
+    } catch (err) {
+      setMessage(err.message || '选择失败')
     }
   }
 
@@ -105,6 +148,53 @@ export default function Map() {
           </div>
         </div>
       </div>
+
+      {(activeAdventure || adventureResult) && (
+        <div className="card">
+          <div className="card-title">奇遇事件</div>
+          {activeAdventure && (
+            <div className="adventure-card" style={{ border: '2px solid ' + RARITY_COLORS[activeAdventure.rarity] }}>
+              <div className="adventure-header">
+                <span className="adventure-rarity" style={{ color: RARITY_COLORS[activeAdventure.rarity] }}>
+                  【{RARITY_NAMES[activeAdventure.rarity]}】
+                </span>
+                <h3 className="adventure-name">{activeAdventure.name}</h3>
+              </div>
+              <div className="adventure-desc">{activeAdventure.description}</div>
+              <div className="adventure-choices">
+                <h4>选择你的行动：</h4>
+                {activeAdventure.choices.map((choice) => (
+                  <button
+                    key={choice.index}
+                    className="adventure-choice-btn"
+                    onClick={() => handleAdventureChoice(choice.index)}
+                  >
+                    {choice.text}
+                  </button>
+                ))}
+              </div>
+            </div>
+          )}
+          {adventureResult && !activeAdventure && (
+            <div className="adventure-result">
+              <h3>奇遇结果</h3>
+              <div className="result-message">{adventureResult.message}</div>
+              {adventureResult.details && adventureResult.details.length > 0 && (
+                <div className="result-details">
+                  <div className="reward-list">
+                    {adventureResult.details.map((detail, idx) => (
+                      <div key={idx} className="reward-item">{detail}</div>
+                    ))}
+                  </div>
+                </div>
+              )}
+              <button className="btn-action" onClick={() => setAdventureResult(null)}>
+                确定
+              </button>
+            </div>
+          )}
+        </div>
+      )}
 
       <div className="card">
         <div className="card-title">可探索地图</div>
@@ -173,6 +263,8 @@ export default function Map() {
                       ? 'log-encounter'
                       : log.type === 'item'
                       ? 'log-item'
+                      : log.type === 'adventure'
+                      ? 'log-adventure'
                       : 'log-explore'
                   }
                 >

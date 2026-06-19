@@ -204,6 +204,43 @@ export const signInAPI = {
     })
 }
 
+export const marketAPI = {
+  getListings: (params) => {
+    const query = new URLSearchParams(params || {}).toString()
+    return request(`/market/list?${query}`)
+  },
+  getMyListings: () => request('/market/my-listings'),
+  createListing: (itemId, quantity, price) =>
+    request('/market/list', {
+      method: 'POST',
+      body: JSON.stringify({ itemId, quantity, price })
+    }),
+  cancelListing: (listingId) =>
+    request(`/market/cancel/${listingId}`, {
+      method: 'POST'
+    }),
+  buyListing: (listingId) =>
+    request(`/market/buy/${listingId}`, {
+      method: 'POST'
+    }),
+  getRecords: (params) => {
+    const query = new URLSearchParams(params || {}).toString()
+    return request(`/market/records?${query}`)
+  }
+}
+
+export const adventureAPI = {
+  getActive: () => request('/adventures/active'),
+  makeChoice: (choiceIndex) =>
+    request(`/adventures/choose/${choiceIndex}`, {
+      method: 'POST'
+    }),
+  getLogs: (params) => {
+    const query = new URLSearchParams(params || {}).toString()
+    return request(`/adventures/logs?${query}`)
+  }
+}
+
 export const adminAPI = {
   login: (username, password) =>
     request('/admin/login', {

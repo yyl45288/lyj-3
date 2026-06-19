@@ -269,6 +269,54 @@ db.exec(`
     FOREIGN KEY (character_id) REFERENCES characters(id) ON DELETE CASCADE,
     FOREIGN KEY (dungeon_id) REFERENCES dungeons(id) ON DELETE CASCADE
   );
+
+  CREATE TABLE IF NOT EXISTS market_listings (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    seller_id INTEGER NOT NULL,
+    item_id INTEGER NOT NULL,
+    quantity INTEGER DEFAULT 1,
+    price INTEGER NOT NULL,
+    status TEXT DEFAULT 'active',
+    created_at TEXT DEFAULT (datetime('now')),
+    sold_at TEXT,
+    FOREIGN KEY (seller_id) REFERENCES characters(id) ON DELETE CASCADE
+  );
+
+  CREATE TABLE IF NOT EXISTS trade_records (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    listing_id INTEGER,
+    seller_id INTEGER NOT NULL,
+    buyer_id INTEGER NOT NULL,
+    item_id INTEGER NOT NULL,
+    quantity INTEGER DEFAULT 1,
+    price_per_unit INTEGER NOT NULL,
+    total_price INTEGER NOT NULL,
+    trade_type TEXT DEFAULT 'market',
+    created_at TEXT DEFAULT (datetime('now')),
+    FOREIGN KEY (seller_id) REFERENCES characters(id) ON DELETE CASCADE,
+    FOREIGN KEY (buyer_id) REFERENCES characters(id) ON DELETE CASCADE
+  );
+
+  CREATE TABLE IF NOT EXISTS adventure_logs (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    character_id INTEGER NOT NULL,
+    adventure_id INTEGER NOT NULL,
+    map_id INTEGER,
+    choice_index INTEGER,
+    result TEXT,
+    rewards TEXT,
+    created_at TEXT DEFAULT (datetime('now')),
+    FOREIGN KEY (character_id) REFERENCES characters(id) ON DELETE CASCADE
+  );
+
+  CREATE TABLE IF NOT EXISTS active_adventures (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    character_id INTEGER NOT NULL UNIQUE,
+    adventure_id INTEGER NOT NULL,
+    map_id INTEGER,
+    created_at TEXT DEFAULT (datetime('now')),
+    FOREIGN KEY (character_id) REFERENCES characters(id) ON DELETE CASCADE
+  );
 `);
 
   try {

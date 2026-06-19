@@ -215,6 +215,364 @@ const QUESTS = [
   }
 ];
 
+const ADVENTURE_EVENTS = [
+  {
+    id: 1,
+    name: '神秘宝箱',
+    description: '你在山林深处发现了一个布满灰尘的神秘宝箱，上面刻着古老的符文。',
+    mapIds: [1, 2, 3],
+    rarity: 'common',
+    choices: [
+      {
+        text: '直接打开宝箱',
+        resultText: '你小心翼翼地打开宝箱，里面散发出耀眼的光芒！',
+        rewards: { gold: 200, items: [{ itemId: 5, quantity: 1 }] },
+        risk: { hpDamage: 0 }
+      },
+      {
+        text: '谨慎检查后再打开',
+        resultText: '你仔细检查了宝箱的机关，安全地取出了里面的宝物。',
+        rewards: { gold: 150, exp: 50 },
+        risk: { hpDamage: 0 }
+      },
+      {
+        text: '离开，不贪图财宝',
+        resultText: '你不为财宝不为所动，转身离去。心中却涌起一股清灵感。',
+        rewards: { exp: 80 },
+        risk: { hpDamage: 0 }
+      }
+    ]
+  },
+  {
+    id: 2,
+    name: '迷路的修士',
+    description: '一位受伤的中年修士向你求助，他说自己迷失在山林中。',
+    mapIds: [1, 2, 3, 4],
+    rarity: 'common',
+    choices: [
+      {
+        text: '热心相助，护送他出山',
+        resultText: '你护送修士安全离开，他感激地送你一些丹药作为谢礼。',
+        rewards: { gold: 100, items: [{ itemId: 1, quantity: 3 }] },
+        risk: { hpDamage: 0 }
+      },
+      {
+        text: '给他一些丹药，让他自己走',
+        resultText: '你给了他一些疗伤药，他道谢后独自离去。',
+        rewards: { exp: 30 },
+        risk: { hpDamage: 0 }
+      },
+      {
+        text: '置之不理',
+        resultText: '你选择无视他继续前行，但心中隐隐有些不安。',
+        rewards: {},
+        risk: { hpDamage: 0 }
+      }
+    ]
+  },
+  {
+    id: 3,
+    name: '灵泉秘境',
+    description: '你发现了一处隐匿的灵泉，泉水散发着浓郁的灵气。',
+    mapIds: [2, 3, 4, 5],
+    rarity: 'rare',
+    choices: [
+      {
+        text: '跳入灵泉中修炼',
+        resultText: '你浸入灵泉，灵气疯狂涌入体内，修为大进！',
+        rewards: { exp: 300, hp: 50 },
+        risk: { hpDamage: 0 }
+      },
+      {
+        text: '收集灵泉水带走',
+        resultText: '你小心地收集了一些灵泉水，可以慢慢炼化。',
+        rewards: { items: [{ itemId: 5, quantity: 2 }] },
+        risk: { hpDamage: 0 }
+      },
+      {
+        text: '在泉边打坐感悟',
+        resultText: '你在泉边打坐，感悟天地灵气，心境提升。',
+        rewards: { exp: 150, mp: 30 },
+        risk: { hpDamage: 0 }
+      }
+    ]
+  },
+  {
+    id: 4,
+    name: '妖兽巢穴',
+    description: '你误入了一个妖兽的巢穴，里面似乎藏有宝物，但也十分危险。',
+    mapIds: [3, 4, 5, 6],
+    rarity: 'rare',
+    choices: [
+      {
+        text: '深入探索',
+        resultText: '你深入巢穴，与守卫妖兽激战，最终获得了宝物！',
+        rewards: { gold: 500, exp: 200, items: [{ itemId: 603, quantity: 1 }] },
+        risk: { hpDamage: 50 }
+      },
+      {
+        text: '只在外围看看',
+        resultText: '你在巢穴外围找到了一些散落的宝物。',
+        rewards: { gold: 200, items: [{ itemId: 2, quantity: 1 }] },
+        risk: { hpDamage: 20 }
+      },
+      {
+        text: '悄悄离开',
+        resultText: '你察觉到危险，明智地选择了离开。',
+        rewards: {},
+        risk: { hpDamage: 0 }
+      }
+    ]
+  },
+  {
+    id: 5,
+    name: '上古遗迹',
+    description: '你发现了一处上古修士的遗迹，石门上刻满了神秘的符文。',
+    mapIds: [4, 5, 6],
+    rarity: 'epic',
+    choices: [
+      {
+        text: '尝试破解符文进入',
+        resultText: '你花费大量时间破解符文，成功进入遗迹，获得了上古传承！',
+        rewards: { exp: 800, gold: 2000, items: [{ itemId: 103, quantity: 1 }] },
+        risk: { hpDamage: 100 }
+      },
+      {
+        text: '在遗迹外围搜寻',
+        resultText: '你在遗迹外围找到了一些有价值的东西。',
+        rewards: { gold: 800, exp: 300, items: [{ itemId: 6, quantity: 1 }] },
+        risk: { hpDamage: 30 }
+      },
+      {
+        text: '记下位置，日后再来',
+        resultText: '你记下了遗迹的位置，准备修为够了再来探索。',
+        rewards: { exp: 50 },
+        risk: { hpDamage: 0 }
+      }
+    ]
+  },
+  {
+    id: 6,
+    name: '渡劫修士',
+    description: '天空乌云密布，一位修士正在渡劫，情况十分危急。',
+    mapIds: [3, 4, 5, 6],
+    rarity: 'rare',
+    choices: [
+      {
+        text: '出手相助',
+        resultText: '你出手相助，助他成功渡劫。修士感激不尽，赠予你宝物。',
+        rewards: { gold: 600, items: [{ itemId: 701, quantity: 1 }] },
+        risk: { hpDamage: 80 }
+      },
+      {
+        text: '在一旁观看感悟',
+        resultText: '你在一旁观看天劫，感悟天地之威，有所收获。',
+        rewards: { exp: 400 },
+        risk: { hpDamage: 20 }
+      },
+      {
+        text: '趁火打劫',
+        resultText: '你想趁人之危，却被天劫余波击中，狼狈逃窜。',
+        rewards: {},
+        risk: { hpDamage: 150 }
+      }
+    ]
+  },
+  {
+    id: 7,
+    name: '神秘游商',
+    description: '一位神秘的游商出现在你面前，他的货物似乎有些特别。',
+    mapIds: [1, 2, 3, 4, 5, 6],
+    rarity: 'rare',
+    choices: [
+      {
+        text: '购买神秘物品（花费300金币）',
+        resultText: '你花300金币买下了神秘物品，打开一看竟是稀世珍宝！',
+        rewards: { items: [{ itemId: 603, quantity: 1 }] },
+        cost: { gold: 300 },
+        risk: { hpDamage: 0 }
+      },
+      {
+        text: '随便看看',
+        resultText: '你在游商的货物中挑了些普通丹药。',
+        rewards: { items: [{ itemId: 3, quantity: 2 }] },
+        cost: { gold: 50 },
+        risk: { hpDamage: 0 }
+      },
+      {
+        text: '不买，离开',
+        resultText: '你没有购买任何东西，游商神秘地笑了笑便消失了。',
+        rewards: {},
+        risk: { hpDamage: 0 }
+      }
+    ]
+  },
+  {
+    id: 8,
+    name: '千年仙草',
+    description: '你发现了一株生长千年的仙草，散发着诱人的药香。',
+    mapIds: [2, 3, 4, 5],
+    rarity: 'common',
+    choices: [
+      {
+        text: '直接采摘服用',
+        resultText: '你采下仙草直接服下，药力在体内化开，修为提升！',
+        rewards: { exp: 200, hp: 30 },
+        risk: { hpDamage: 0 }
+      },
+      {
+        text: '小心挖掘带回',
+        resultText: '你小心地将仙草连根挖起，可以用来炼丹效果更好。',
+        rewards: { items: [{ itemId: 5, quantity: 1 }] },
+        risk: { hpDamage: 0 }
+      },
+      {
+        text: '守在旁边修炼',
+        resultText: '你在仙草旁修炼，吸收其散发的灵气。',
+        rewards: { exp: 100 },
+        risk: { hpDamage: 0 }
+      }
+    ]
+  },
+  {
+    id: 9,
+    name: '心魔考验',
+    description: '你忽然陷入幻境，心魔出现在你面前，考验你的道心。',
+    mapIds: [3, 4, 5, 6],
+    rarity: 'epic',
+    choices: [
+      {
+        text: '正面对抗心魔',
+        resultText: '你鼓起勇气正面对抗心魔，历经艰险终于战胜心魔，道心更加坚定！',
+        rewards: { exp: 1000, mp: 100 },
+        risk: { hpDamage: 120 }
+      },
+      {
+        text: '以智慧化解心魔',
+        resultText: '你以大智慧化解心魔，明心见性。',
+        rewards: { exp: 600, hp: 50, mp: 50 },
+        risk: { hpDamage: 40 }
+      },
+      {
+        text: '逃避心魔',
+        resultText: '你选择逃避，心魔在你心中留下阴影。',
+        rewards: {},
+        risk: { hpDamage: 60 }
+      }
+    ]
+  },
+  {
+    id: 10,
+    name: '秘境入口',
+    description: '你发现了一个隐秘的秘境入口，里面似乎藏有大机缘。',
+    mapIds: [4, 5, 6],
+    rarity: 'epic',
+    choices: [
+      {
+        text: '直接进入探索',
+        resultText: '你进入秘境，历经重重考验，最终获得了丰厚的奖励！',
+        rewards: { gold: 3000, exp: 1200, items: [{ itemId: 104, quantity: 1 }] },
+        risk: { hpDamage: 200 }
+      },
+      {
+        text: '在入口处修炼',
+        resultText: '你在秘境入口处修炼，灵气比外界浓郁数倍。',
+        rewards: { exp: 500, mp: 80 },
+        risk: { hpDamage: 0 }
+      },
+      {
+        text: '标记位置，组队再来',
+        resultText: '你记下了秘境位置，等实力足够时再来探索。',
+        rewards: { exp: 100 },
+        risk: { hpDamage: 0 }
+      }
+    ]
+  },
+  {
+    id: 11,
+    name: '灵石矿脉',
+    description: '你发现了一处隐藏的灵石矿脉，闪烁着耀眼的光芒。',
+    mapIds: [2, 3, 4, 5],
+    rarity: 'rare',
+    choices: [
+      {
+        text: '全力开采',
+        resultText: '你花费大量时间开采，获得了不少灵石！',
+        rewards: { gold: 1000, items: [{ itemId: 6, quantity: 1 }] },
+        risk: { hpDamage: 40 }
+      },
+      {
+        text: '适度开采',
+        resultText: '你适度开采了一些灵石便离开。',
+        rewards: { gold: 400 },
+        risk: { hpDamage: 10 }
+      },
+      {
+        text: '不贪心，离开',
+        resultText: '你不贪恋财物，继续自己的修行之路。',
+        rewards: { exp: 50 },
+        risk: { hpDamage: 0 }
+      }
+    ]
+  },
+  {
+    id: 12,
+    name: '古修洞府',
+    description: '你发现了一座古修洞府，门上写着"有缘者入"。',
+    mapIds: [3, 4, 5, 6],
+    rarity: 'epic',
+    choices: [
+      {
+        text: '推门而入',
+        resultText: '你推开洞府大门，古修传承尽得！',
+        rewards: { exp: 1500, gold: 2500, items: [{ itemId: 204, quantity: 1 }] },
+        risk: { hpDamage: 150 }
+      },
+      {
+        text: '先在洞府外叩拜',
+        resultText: '你恭敬地在洞府外叩拜，古修显灵赐福。',
+        rewards: { exp: 500, items: [{ itemId: 6, quantity: 2 }] },
+        risk: { hpDamage: 0 }
+      },
+      {
+        text: '绕道而行',
+        resultText: '你觉得机缘未到，选择离开。',
+        rewards: { exp: 50 },
+        risk: { hpDamage: 0 }
+      }
+    ]
+  }
+];
+
+const ADVENTURE_RARITY_NAMES = { common: '普通', rare: '稀有', epic: '史诗' };
+const ADVENTURE_RARITY_COLORS = { common: '#1eff00', rare: '#0070dd', epic: '#a335ee' };
+
+function getAdventureById(id) {
+  return ADVENTURE_EVENTS.find(adv => adv.id === id) || null;
+}
+
+function getRandomAdventure(mapId) {
+  const available = ADVENTURE_EVENTS.filter(adv => adv.mapIds.includes(mapId));
+  if (available.length === 0) return null;
+  
+  const rand = Math.random();
+  let pool;
+  if (rand < 0.6) {
+    pool = available.filter(adv => adv.rarity === 'common');
+  } else if (rand < 0.9) {
+    pool = available.filter(adv => adv.rarity === 'rare');
+  } else {
+    pool = available.filter(adv => adv.rarity === 'epic');
+  }
+  
+  if (pool.length === 0) {
+    pool = available;
+  }
+  
+  const index = Math.floor(Math.random() * pool.length);
+  return pool[index];
+}
+
 const EQUIPMENT_SLOTS = ['weapon', 'helmet', 'armor', 'boots', 'accessory'];
 
 const QUALITY_ORDER = ['common', 'uncommon', 'rare', 'epic', 'legendary'];
@@ -351,6 +709,9 @@ module.exports = {
   PETS,
   PET_TYPES,
   PET_TYPE_COLORS,
+  ADVENTURE_EVENTS,
+  ADVENTURE_RARITY_NAMES,
+  ADVENTURE_RARITY_COLORS,
   EQUIPMENT_SLOTS,
   QUALITY_ORDER,
   QUALITY_NAMES,
@@ -369,6 +730,8 @@ module.exports = {
   getMapById,
   getMonsterById,
   getPetById,
+  getAdventureById,
+  getRandomAdventure,
   getExpToNextLevel,
   calculatePetStats
 };

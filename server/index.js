@@ -14,6 +14,8 @@ const signInRoutes = require('./routes/signIn');
 const titleRoutes = require('./routes/titles');
 const skillRoutes = require('./routes/skills');
 const dungeonRoutes = require('./routes/dungeons');
+const marketRoutes = require('./routes/market');
+const adventureRoutes = require('./routes/adventure');
 
 const app = express();
 const PORT = 3001;
@@ -34,6 +36,8 @@ app.use('/api/sign-in', signInRoutes);
 app.use('/api/titles', titleRoutes);
 app.use('/api/skills', skillRoutes);
 app.use('/api/dungeons', dungeonRoutes);
+app.use('/api/market', marketRoutes);
+app.use('/api/adventures', adventureRoutes);
 
 app.use((err, req, res, next) => {
   console.error(err.stack);

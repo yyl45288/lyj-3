@@ -20,6 +20,8 @@ import Admin from './pages/Admin'
 import Titles from './pages/Titles'
 import Skills from './pages/Skills'
 import Dungeons from './pages/Dungeons'
+import Market from './pages/Market'
+import Adventure from './pages/Adventure'
 
 function AuthGuard({ children }) {
   const { user, loading } = useAuth()
@@ -121,6 +123,8 @@ function GameLayout() {
           <NavLink to="/equipment">装备</NavLink>
           <NavLink to="/inventory">背包</NavLink>
           <NavLink to="/quests">任务</NavLink>
+          <NavLink to="/market">交易行</NavLink>
+          <NavLink to="/adventures">奇遇</NavLink>
           {isAdmin && <NavLink to="/admin" style={{ color: '#d4af37' }}>🛡️ 管理</NavLink>}
         </div>
         <div className="nav-user">
@@ -175,6 +179,8 @@ function AppRoutes() {
         <Route path="/equipment" element={<Equipment />} />
         <Route path="/inventory" element={<Inventory />} />
         <Route path="/quests" element={<Quest />} />
+        <Route path="/market" element={<Market />} />
+        <Route path="/adventures" element={<Adventure />} />
       </Route>
       <Route path="*" element={<Navigate to="/" replace />} />
     </Routes>
