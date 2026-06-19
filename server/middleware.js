@@ -14,9 +14,21 @@ function auth(req, res, next) {
   try {
     const decoded = jwt.verify(token, JWT_SECRET);
     req.user = decoded;
+    req.isAdmin = false;
     next();
   } catch (err) {
-    return res.status(401).json({ error: '令牌无效或已过期' });
+    try {
+      const decoded = jwt.verify(token, ADMIN_JWT_SECRET);
+      const admin = db.prepare('SELECT * FROM admins WHERE id = ?').get(decoded.id);
+      if (admin) {
+        req.user = decoded;
+        req.isAdmin = true;
+        return next();
+      }
+      return res.status(401).json({ error: '令牌无效或已过期' });
+    } catch (err2) {
+      return res.status(401).json({ error: '令牌无效或已过期' });
+    }
   }
 }
 

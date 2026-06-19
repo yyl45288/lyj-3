@@ -1857,3 +1857,136 @@ body {
     font-size: 0.75rem;
   }
 }
+
+.admin-tabs {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  margin-top: 1rem;
+  margin-bottom: 1rem;
+  padding-bottom: 1rem;
+  border-bottom: 1px solid var(--border-glow);
+}
+
+.admin-tab {
+  padding: 0.6rem 1.2rem;
+  background: rgba(10, 10, 26, 0.6);
+  color: var(--color-text-dim);
+  border: 1px solid rgba(126, 200, 227, 0.2);
+  border-radius: 6px;
+  cursor: pointer;
+  font-family: inherit;
+  font-size: 0.9rem;
+  transition: all 0.3s;
+}
+
+.admin-tab:hover {
+  border-color: var(--color-blue);
+  color: var(--color-text);
+}
+
+.admin-tab.active {
+  background: linear-gradient(135deg, var(--color-gold), #b8962e);
+  color: #0a0a1a;
+  border-color: var(--color-gold);
+  font-weight: 700;
+}
+
+.admin-table {
+  overflow-x: auto;
+  margin-top: 1rem;
+}
+
+.admin-table table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.9rem;
+}
+
+.admin-table thead {
+  background: rgba(10, 10, 26, 0.8);
+}
+
+.admin-table th {
+  padding: 0.8rem 1rem;
+  text-align: left;
+  color: var(--color-gold);
+  border-bottom: 2px solid var(--border-glow);
+  white-space: nowrap;
+}
+
+.admin-table td {
+  padding: 0.7rem 1rem;
+  border-bottom: 1px solid rgba(126, 200, 227, 0.1);
+}
+
+.admin-table tbody tr:hover {
+  background: rgba(126, 200, 227, 0.05);
+}
+
+.modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.7);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 1000;
+  padding: 1rem;
+}
+
+.modal-card {
+  background: var(--bg-secondary);
+  border: 1px solid var(--border-glow);
+  border-radius: 12px;
+  padding: 2rem;
+  width: 100%;
+  max-width: 500px;
+  max-height: 90vh;
+  overflow-y: auto;
+  box-shadow: 0 0 40px rgba(212, 175, 55, 0.2);
+}
+
+.modal-title {
+  color: var(--color-gold);
+  font-size: 1.3rem;
+  font-weight: 700;
+  margin-bottom: 1.5rem;
+  letter-spacing: 2px;
+}
+
+.modal-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 0.8rem;
+  margin-top: 1.5rem;
+}
+
+.modal-actions .btn-primary:first-child {
+  background: rgba(126, 200, 227, 0.2);
+  color: var(--color-blue);
+}
+
+@media (max-width: 768px) {
+  .admin-tabs {
+    gap: 0.3rem;
+  }
+
+  .admin-tab {
+    padding: 0.5rem 0.8rem;
+    font-size: 0.8rem;
+  }
+
+  .admin-table th,
+  .admin-table td {
+    padding: 0.5rem 0.6rem;
+    font-size: 0.8rem;
+  }
+
+  .modal-card {
+    padding: 1.2rem;
+  }
+}
