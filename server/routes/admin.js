@@ -82,13 +82,13 @@ router.post('/items', adminAuth, (req, res) => {
   `).run(
     name,
     type,
-    subType || null,
-    quality || null,
-    slot || null,
-    description || null,
+    subType ?? null,
+    quality ?? null,
+    slot ?? null,
+    description ?? null,
     effect ? JSON.stringify(effect) : null,
     stats ? JSON.stringify(stats) : null,
-    price || 0
+    price ?? 0
   );
 
   const item = db.prepare('SELECT * FROM items WHERE id = ?').get(result.lastInsertRowid);
@@ -114,13 +114,13 @@ router.put('/items/:id', adminAuth, (req, res) => {
   `).run(
     name,
     type,
-    subType || null,
-    quality || null,
-    slot || null,
-    description || null,
+    subType ?? null,
+    quality ?? null,
+    slot ?? null,
+    description ?? null,
     effect ? JSON.stringify(effect) : null,
     stats ? JSON.stringify(stats) : null,
-    price || 0,
+    price ?? 0,
     id
   );
 
@@ -167,13 +167,13 @@ router.post('/achievements', adminAuth, (req, res) => {
     VALUES (?, ?, ?, ?, ?, ?, ?, ?)
   `).run(
     name,
-    description || null,
+    description ?? null,
     type,
-    targetValue || 1,
-    title || null,
+    targetValue ?? 1,
+    title ?? null,
     rewards ? JSON.stringify(rewards) : null,
-    icon || null,
-    sortOrder || 0
+    icon ?? null,
+    sortOrder ?? 0
   );
 
   const achievement = db.prepare('SELECT * FROM achievements WHERE id = ?').get(result.lastInsertRowid);
@@ -200,13 +200,13 @@ router.put('/achievements/:id', adminAuth, (req, res) => {
     WHERE id = ?
   `).run(
     name,
-    description || null,
+    description ?? null,
     type,
-    targetValue || 1,
-    title || null,
+    targetValue ?? 1,
+    title ?? null,
     rewards ? JSON.stringify(rewards) : null,
-    icon || null,
-    sortOrder || 0,
+    icon ?? null,
+    sortOrder ?? 0,
     id
   );
 
@@ -256,9 +256,9 @@ router.post('/sign-in-rewards', adminAuth, (req, res) => {
     VALUES (?, ?, ?, ?)
   `).run(
     dayType,
-    dayNumber || null,
+    dayNumber ?? null,
     rewards ? JSON.stringify(rewards) : null,
-    sortOrder || 0
+    sortOrder ?? 0
   );
 
   const reward = db.prepare('SELECT * FROM sign_in_rewards WHERE id = ?').get(result.lastInsertRowid);
@@ -285,9 +285,9 @@ router.put('/sign-in-rewards/:id', adminAuth, (req, res) => {
     WHERE id = ?
   `).run(
     dayType,
-    dayNumber || null,
+    dayNumber ?? null,
     rewards ? JSON.stringify(rewards) : null,
-    sortOrder || 0,
+    sortOrder ?? 0,
     id
   );
 
@@ -332,13 +332,13 @@ router.post('/skills', adminAuth, (req, res) => {
     INSERT INTO skills (name, description, type, subtype, level_req, realm_req, mp_cost, cooldown, base_power, effect, growth, proficiency_per_level, max_level, icon, sort_order)
     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
   `).run(
-    name, description || null, type, subtype || null,
-    level_req || 1, realm_req || null, mp_cost || 0, cooldown || 0,
-    base_power || 0,
+    name, description ?? null, type, subtype ?? null,
+    level_req ?? 1, realm_req ?? null, mp_cost ?? 0, cooldown ?? 0,
+    base_power ?? 0,
     effect ? JSON.stringify(effect) : null,
     growth ? JSON.stringify(growth) : null,
-    proficiency_per_level || 100, max_level || 10,
-    icon || null, sort_order || 0
+    proficiency_per_level ?? 100, max_level ?? 10,
+    icon ?? null, sort_order ?? 0
   );
   const skill = db.prepare('SELECT * FROM skills WHERE id = ?').get(result.lastInsertRowid);
   res.json({
@@ -357,13 +357,13 @@ router.put('/skills/:id', adminAuth, (req, res) => {
     UPDATE skills SET name = ?, description = ?, type = ?, subtype = ?, level_req = ?, realm_req = ?, mp_cost = ?, cooldown = ?, base_power = ?, effect = ?, growth = ?, proficiency_per_level = ?, max_level = ?, icon = ?, sort_order = ?
     WHERE id = ?
   `).run(
-    name, description || null, type, subtype || null,
-    level_req || 1, realm_req || null, mp_cost || 0, cooldown || 0,
-    base_power || 0,
+    name, description ?? null, type, subtype ?? null,
+    level_req ?? 1, realm_req ?? null, mp_cost ?? 0, cooldown ?? 0,
+    base_power ?? 0,
     effect ? JSON.stringify(effect) : null,
     growth ? JSON.stringify(growth) : null,
-    proficiency_per_level || 100, max_level || 10,
-    icon || null, sort_order || 0, id
+    proficiency_per_level ?? 100, max_level ?? 10,
+    icon ?? null, sort_order ?? 0, id
   );
   const skill = db.prepare('SELECT * FROM skills WHERE id = ?').get(id);
   res.json({
@@ -400,12 +400,12 @@ router.post('/dungeons', adminAuth, (req, res) => {
     INSERT INTO dungeons (name, description, level_req, realm_req, daily_limit, monsters, first_clear_rewards, clear_rewards, icon, sort_order)
     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
   `).run(
-    name, description || null, level_req || 1, realm_req || null,
-    daily_limit || 3,
+    name, description ?? null, level_req ?? 1, realm_req ?? null,
+    daily_limit ?? 3,
     monsters ? JSON.stringify(monsters) : '[]',
     first_clear_rewards ? JSON.stringify(first_clear_rewards) : null,
     clear_rewards ? JSON.stringify(clear_rewards) : null,
-    icon || null, sort_order || 0
+    icon ?? null, sort_order ?? 0
   );
   const dungeon = db.prepare('SELECT * FROM dungeons WHERE id = ?').get(result.lastInsertRowid);
   res.json({
@@ -429,12 +429,12 @@ router.put('/dungeons/:id', adminAuth, (req, res) => {
     UPDATE dungeons SET name = ?, description = ?, level_req = ?, realm_req = ?, daily_limit = ?, monsters = ?, first_clear_rewards = ?, clear_rewards = ?, icon = ?, sort_order = ?
     WHERE id = ?
   `).run(
-    name, description || null, level_req || 1, realm_req || null,
-    daily_limit || 3,
+    name, description ?? null, level_req ?? 1, realm_req ?? null,
+    daily_limit ?? 3,
     monsters ? JSON.stringify(monsters) : '[]',
     first_clear_rewards ? JSON.stringify(first_clear_rewards) : null,
     clear_rewards ? JSON.stringify(clear_rewards) : null,
-    icon || null, sort_order || 0, id
+    icon ?? null, sort_order ?? 0, id
   );
   const dungeon = db.prepare('SELECT * FROM dungeons WHERE id = ?').get(id);
   res.json({
@@ -475,9 +475,9 @@ router.post('/titles', adminAuth, (req, res) => {
     INSERT INTO titles (name, description, source, source_id, stats, icon, quality, sort_order)
     VALUES (?, ?, ?, ?, ?, ?, ?, ?)
   `).run(
-    name, description || null, source || 'achievement', source_id || null,
+    name, description ?? null, source ?? 'achievement', source_id ?? null,
     stats ? JSON.stringify(stats) : null,
-    icon || null, quality || 'common', sort_order || 0
+    icon ?? null, quality ?? 'common', sort_order ?? 0
   );
   const title = db.prepare('SELECT * FROM titles WHERE id = ?').get(result.lastInsertRowid);
   res.json({
@@ -496,9 +496,9 @@ router.put('/titles/:id', adminAuth, (req, res) => {
     UPDATE titles SET name = ?, description = ?, source = ?, source_id = ?, stats = ?, icon = ?, quality = ?, sort_order = ?
     WHERE id = ?
   `).run(
-    name, description || null, source || 'achievement', source_id || null,
+    name, description ?? null, source ?? 'achievement', source_id ?? null,
     stats ? JSON.stringify(stats) : null,
-    icon || null, quality || 'common', sort_order || 0, id
+    icon ?? null, quality ?? 'common', sort_order ?? 0, id
   );
   const title = db.prepare('SELECT * FROM titles WHERE id = ?').get(id);
   res.json({

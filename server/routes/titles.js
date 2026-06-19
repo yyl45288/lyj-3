@@ -5,7 +5,28 @@ const { TITLE_STATS_MAP, getTitleStats } = require('../gameData');
 
 const router = express.Router();
 
+function syncAllPredefinedTitles() {
+  const achievementTitles = db.prepare(`
+    SELECT a.* FROM achievements a
+    WHERE a.title IS NOT NULL AND a.title != ''
+  `).all();
+
+  for (const ach of achievementTitles) {
+    const titleName = ach.title;
+    const existing = db.prepare('SELECT * FROM titles WHERE name = ?').get(titleName);
+    if (!existing) {
+      const stats = TITLE_STATS_MAP[titleName] || {};
+      db.prepare(`
+        INSERT INTO titles (name, description, source, source_id, stats, icon, quality, sort_order)
+        VALUES (?, ?, 'achievement', ?, ?, ?, 'common', ?)
+      `).run(titleName, `完成成就「${ach.name}」获得`, ach.id, JSON.stringify(stats), ach.icon || '🏆', ach.sort_order || 0);
+    }
+  }
+}
+
 function syncAchievementTitles(characterId) {
+  syncAllPredefinedTitles();
+
   const completedAchievements = db.prepare(`
     SELECT a.* FROM achievements a
     JOIN character_achievements ca ON ca.achievement_id = a.id
@@ -14,23 +35,17 @@ function syncAchievementTitles(characterId) {
 
   for (const ach of completedAchievements) {
     const titleName = ach.title;
-    let title = db.prepare('SELECT * FROM titles WHERE name = ?').get(titleName);
-    if (!title) {
-      const stats = TITLE_STATS_MAP[titleName] || {};
-      const result = db.prepare(`
-        INSERT INTO titles (name, description, source, source_id, stats, icon, quality, sort_order)
-        VALUES (?, ?, 'achievement', ?, ?, ?, 'common', ?)
-      `).run(titleName, `完成成就「${ach.name}」获得`, ach.id, JSON.stringify(stats), ach.icon || '🏆', ach.sort_order || 0);
-      title = { id: result.lastInsertRowid };
-    }
-    const existingCharTitle = db.prepare(
-      'SELECT * FROM character_titles WHERE character_id = ? AND title_id = ?'
-    ).get(characterId, title.id);
-    if (!existingCharTitle) {
-      db.prepare(`
-        INSERT INTO character_titles (character_id, title_id, equipped)
-        VALUES (?, ?, 0)
-      `).run(characterId, title.id);
+    const title = db.prepare('SELECT * FROM titles WHERE name = ?').get(titleName);
+    if (title) {
+      const existingCharTitle = db.prepare(
+        'SELECT * FROM character_titles WHERE character_id = ? AND title_id = ?'
+      ).get(characterId, title.id);
+      if (!existingCharTitle) {
+        db.prepare(`
+          INSERT INTO character_titles (character_id, title_id, equipped)
+          VALUES (?, ?, 0)
+        `).run(characterId, title.id);
+      }
     }
   }
 }

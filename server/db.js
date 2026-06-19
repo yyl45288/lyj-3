@@ -1,8 +1,8 @@
 const Database = require('better-sqlite3');
 const path = require('path');
-const { ITEMS, QUESTS } = require('./gameData');
+const { ITEMS, QUESTS, TITLE_STATS_MAP } = require('./gameData');
 
-const db = new Database(path.join(__dirname, 'game_v3.db'));
+const db = new Database(path.join(__dirname, 'game_v5.db'));
 
 db.pragma('journal_mode = WAL');
 db.pragma('foreign_keys = ON');
@@ -437,6 +437,27 @@ function seedData() {
     });
 
     insertMany(defaultAchievements);
+
+    const insertTitle = db.prepare(`
+      INSERT INTO titles (name, description, source, source_id, stats, icon, quality, sort_order)
+      VALUES (@name, @description, 'achievement', @source_id, @stats, @icon, 'common', @sort_order)
+    `);
+    const insertTitles = db.transaction((achievements) => {
+      for (const ach of achievements) {
+        if (ach.title) {
+          const stats = TITLE_STATS_MAP[ach.title] || {};
+          insertTitle.run({
+            name: ach.title,
+            description: `完成成就「${ach.name}」获得`,
+            source_id: 0,
+            stats: JSON.stringify(stats),
+            icon: ach.icon || '🏆',
+            sort_order: ach.sort_order || 0
+          });
+        }
+      }
+    });
+    insertTitles(defaultAchievements);
   }
 
   const signInRewardCount = db.prepare('SELECT COUNT(*) as count FROM sign_in_rewards').get().count;
