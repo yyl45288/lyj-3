@@ -211,12 +211,6 @@ router.post('/claim/:achievementId', auth, (req, res) => {
     `).run(newGold, newExp, newLevel, newMaxHp, newMaxMp, newHp, newMp, character.id);
 
     if (rewards.items && rewards.items.length > 0) {
-      const insertInventory = db.prepare(`
-        INSERT INTO inventory (character_id, item_id, quantity, equipped, slot)
-        VALUES (?, ?, ?, 0, NULL)
-        ON CONFLICT(character_id, item_id) WHERE equipped = 0 DO UPDATE SET quantity = quantity + excluded.quantity
-      `);
-
       for (const itemReward of rewards.items) {
         const item = getItemById(itemReward.itemId);
         if (item) {
@@ -228,7 +222,10 @@ router.post('/claim/:achievementId', auth, (req, res) => {
             db.prepare('UPDATE inventory SET quantity = quantity + ? WHERE id = ?')
               .run(itemReward.quantity, existing.id);
           } else {
-            insertInventory.run(character.id, itemReward.itemId, itemReward.quantity);
+            db.prepare(`
+              INSERT INTO inventory (character_id, item_id, quantity, equipped, slot)
+              VALUES (?, ?, ?, 0, NULL)
+            `).run(character.id, itemReward.itemId, itemReward.quantity);
           }
         }
       }

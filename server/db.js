@@ -166,6 +166,25 @@ db.exec(`
   );
 `);
 
+  try {
+    const dupes = db.prepare(`
+      SELECT character_id, item_id, MIN(id) as keep_id, SUM(quantity) as total_qty
+      FROM inventory WHERE equipped = 0
+      GROUP BY character_id, item_id
+      HAVING COUNT(*) > 1
+    `).all();
+    for (const d of dupes) {
+      db.prepare('DELETE FROM inventory WHERE character_id = ? AND item_id = ? AND equipped = 0')
+        .run(d.character_id, d.item_id);
+      db.prepare('UPDATE inventory SET quantity = ? WHERE id = ?')
+        .run(d.total_qty, d.keep_id);
+    }
+    db.exec(`CREATE UNIQUE INDEX IF NOT EXISTS idx_inventory_char_item_unequipped
+      ON inventory(character_id, item_id) WHERE equipped = 0`);
+  } catch (err) {
+    console.error('创建inventory唯一索引失败:', err.message);
+  }
+
 function seedData() {
   const itemCount = db.prepare('SELECT COUNT(*) as count FROM sqlite_master WHERE type=\'table\' AND name=\'items\'').get();
   if (itemCount.count === 0) {

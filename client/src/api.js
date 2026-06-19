@@ -16,7 +16,7 @@ async function request(url, options = {}) {
   const res = await fetch(`${BASE_URL}${url}`, { ...options, headers })
   const data = await res.json()
   if (!res.ok) {
-    throw new Error(data.message || '请求失败')
+    throw new Error(data.error || data.message || '请求失败')
   }
   return data
 }
