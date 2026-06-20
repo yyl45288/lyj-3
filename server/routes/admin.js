@@ -324,10 +324,18 @@ router.get('/skills', adminAuth, (req, res) => {
 });
 
 router.post('/skills', adminAuth, (req, res) => {
-  const { name, description, type, subtype, level_req, realm_req, mp_cost, cooldown, base_power, effect, growth, proficiency_per_level, max_level, icon, sort_order } = req.body;
+  const { name, description, type, subtype, levelReq, realmReq, mpCost, cooldown, basePower, effect, growth, proficiencyPerLevel, maxLevel, icon, sortOrder } = req.body;
   if (!name || !type) {
     return res.status(400).json({ error: '技能名称和类型不能为空' });
   }
+  const level_req = levelReq;
+  const realm_req = realmReq;
+  const mp_cost = mpCost;
+  const base_power = basePower;
+  const proficiency_per_level = proficiencyPerLevel;
+  const max_level = maxLevel;
+  const sort_order = sortOrder;
+
   const result = db.prepare(`
     INSERT INTO skills (name, description, type, subtype, level_req, realm_req, mp_cost, cooldown, base_power, effect, growth, proficiency_per_level, max_level, icon, sort_order)
     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
@@ -349,9 +357,17 @@ router.post('/skills', adminAuth, (req, res) => {
 
 router.put('/skills/:id', adminAuth, (req, res) => {
   const { id } = req.params;
-  const { name, description, type, subtype, level_req, realm_req, mp_cost, cooldown, base_power, effect, growth, proficiency_per_level, max_level, icon, sort_order } = req.body;
+  const { name, description, type, subtype, levelReq, realmReq, mpCost, cooldown, basePower, effect, growth, proficiencyPerLevel, maxLevel, icon, sortOrder } = req.body;
   const existing = db.prepare('SELECT id FROM skills WHERE id = ?').get(id);
   if (!existing) return res.status(404).json({ error: '技能不存在' });
+
+  const level_req = levelReq;
+  const realm_req = realmReq;
+  const mp_cost = mpCost;
+  const base_power = basePower;
+  const proficiency_per_level = proficiencyPerLevel;
+  const max_level = maxLevel;
+  const sort_order = sortOrder;
 
   db.prepare(`
     UPDATE skills SET name = ?, description = ?, type = ?, subtype = ?, level_req = ?, realm_req = ?, mp_cost = ?, cooldown = ?, base_power = ?, effect = ?, growth = ?, proficiency_per_level = ?, max_level = ?, icon = ?, sort_order = ?
@@ -393,8 +409,15 @@ router.get('/dungeons', adminAuth, (req, res) => {
 });
 
 router.post('/dungeons', adminAuth, (req, res) => {
-  const { name, description, level_req, realm_req, daily_limit, monsters, first_clear_rewards, clear_rewards, icon, sort_order } = req.body;
+  const { name, description, levelReq, realmReq, dailyLimit, monsters, firstClearRewards, clearRewards, icon, sortOrder } = req.body;
   if (!name) return res.status(400).json({ error: '副本名称不能为空' });
+
+  const level_req = levelReq;
+  const realm_req = realmReq;
+  const daily_limit = dailyLimit;
+  const first_clear_rewards = firstClearRewards;
+  const clear_rewards = clearRewards;
+  const sort_order = sortOrder;
 
   const result = db.prepare(`
     INSERT INTO dungeons (name, description, level_req, realm_req, daily_limit, monsters, first_clear_rewards, clear_rewards, icon, sort_order)
@@ -421,9 +444,16 @@ router.post('/dungeons', adminAuth, (req, res) => {
 
 router.put('/dungeons/:id', adminAuth, (req, res) => {
   const { id } = req.params;
-  const { name, description, level_req, realm_req, daily_limit, monsters, first_clear_rewards, clear_rewards, icon, sort_order } = req.body;
+  const { name, description, levelReq, realmReq, dailyLimit, monsters, firstClearRewards, clearRewards, icon, sortOrder } = req.body;
   const existing = db.prepare('SELECT id FROM dungeons WHERE id = ?').get(id);
   if (!existing) return res.status(404).json({ error: '副本不存在' });
+
+  const level_req = levelReq;
+  const realm_req = realmReq;
+  const daily_limit = dailyLimit;
+  const first_clear_rewards = firstClearRewards;
+  const clear_rewards = clearRewards;
+  const sort_order = sortOrder;
 
   db.prepare(`
     UPDATE dungeons SET name = ?, description = ?, level_req = ?, realm_req = ?, daily_limit = ?, monsters = ?, first_clear_rewards = ?, clear_rewards = ?, icon = ?, sort_order = ?
@@ -468,8 +498,11 @@ router.get('/titles', adminAuth, (req, res) => {
 });
 
 router.post('/titles', adminAuth, (req, res) => {
-  const { name, description, source, source_id, stats, icon, quality, sort_order } = req.body;
+  const { name, description, source, sourceId, stats, icon, quality, sortOrder } = req.body;
   if (!name) return res.status(400).json({ error: '称号名称不能为空' });
+
+  const source_id = sourceId;
+  const sort_order = sortOrder;
 
   const result = db.prepare(`
     INSERT INTO titles (name, description, source, source_id, stats, icon, quality, sort_order)
@@ -488,9 +521,12 @@ router.post('/titles', adminAuth, (req, res) => {
 
 router.put('/titles/:id', adminAuth, (req, res) => {
   const { id } = req.params;
-  const { name, description, source, source_id, stats, icon, quality, sort_order } = req.body;
+  const { name, description, source, sourceId, stats, icon, quality, sortOrder } = req.body;
   const existing = db.prepare('SELECT id FROM titles WHERE id = ?').get(id);
   if (!existing) return res.status(404).json({ error: '称号不存在' });
+
+  const source_id = sourceId;
+  const sort_order = sortOrder;
 
   db.prepare(`
     UPDATE titles SET name = ?, description = ?, source = ?, source_id = ?, stats = ?, icon = ?, quality = ?, sort_order = ?
@@ -572,7 +608,7 @@ router.get('/users', adminAuth, (req, res) => {
   const offset = (page - 1) * pageSize;
 
   const users = db.prepare(`
-    SELECT u.id, u.username, u.created_at, c.name as character_name, c.realm, c.level
+    SELECT u.id, u.username, u.created_at, c.id as character_id, c.name as character_name, c.realm, c.level, c.gold, c.exp, c.max_hp, c.max_mp, c.attack, c.defense, c.speed
     FROM users u
     LEFT JOIN characters c ON u.id = c.user_id
     ORDER BY u.id DESC
@@ -582,6 +618,96 @@ router.get('/users', adminAuth, (req, res) => {
   const total = db.prepare('SELECT COUNT(*) as count FROM users').get().count;
 
   res.json({ users, total, page: parseInt(page), pageSize: parseInt(pageSize) });
+});
+
+router.get('/users/:id', adminAuth, (req, res) => {
+  const { id } = req.params;
+  const user = db.prepare(`
+    SELECT u.id, u.username, u.created_at, c.id as character_id, c.name as character_name, c.realm, c.level, c.gold, c.exp, c.max_hp, c.max_mp, c.attack, c.defense, c.speed, c.hp, c.mp
+    FROM users u
+    LEFT JOIN characters c ON u.id = c.user_id
+    WHERE u.id = ?
+  `).get(id);
+
+  if (!user) return res.status(404).json({ error: '用户不存在' });
+  res.json({ user });
+});
+
+router.put('/users/:id', adminAuth, (req, res) => {
+  const { id } = req.params;
+  const { gold, exp, level, realm, attack, defense, speed, maxHp, maxMp, hp, mp } = req.body;
+
+  const char = db.prepare('SELECT * FROM characters WHERE user_id = ?').get(id);
+  if (!char) return res.status(404).json({ error: '用户角色不存在' });
+
+  db.prepare(`
+    UPDATE characters SET
+      gold = COALESCE(?, gold),
+      exp = COALESCE(?, exp),
+      level = COALESCE(?, level),
+      realm = COALESCE(?, realm),
+      attack = COALESCE(?, attack),
+      defense = COALESCE(?, defense),
+      speed = COALESCE(?, speed),
+      max_hp = COALESCE(?, max_hp),
+      max_mp = COALESCE(?, max_mp),
+      hp = COALESCE(?, hp),
+      mp = COALESCE(?, mp)
+    WHERE user_id = ?
+  `).run(
+    gold, exp, level, realm, attack, defense, speed,
+    maxHp, maxMp, hp, mp, id
+  );
+
+  const updated = db.prepare(`
+    SELECT u.id, u.username, u.created_at, c.id as character_id, c.name as character_name, c.realm, c.level, c.gold, c.exp, c.max_hp, c.max_mp, c.attack, c.defense, c.speed
+    FROM users u
+    LEFT JOIN characters c ON u.id = c.user_id
+    WHERE u.id = ?
+  `).get(id);
+
+  res.json({ message: '用户数据更新成功', user: updated });
+});
+
+router.delete('/users/:id', adminAuth, (req, res) => {
+  const { id } = req.params;
+  const user = db.prepare('SELECT * FROM users WHERE id = ?').get(id);
+  if (!user) return res.status(404).json({ error: '用户不存在' });
+
+  const transaction = db.transaction(() => {
+    const char = db.prepare('SELECT id FROM characters WHERE user_id = ?').get(id);
+    if (char) {
+      db.prepare('DELETE FROM inventory WHERE character_id = ?').run(char.id);
+      db.prepare('DELETE FROM character_skills WHERE character_id = ?').run(char.id);
+      db.prepare('DELETE FROM character_achievements WHERE character_id = ?').run(char.id);
+      db.prepare('DELETE FROM character_titles WHERE character_id = ?').run(char.id);
+      db.prepare('DELETE FROM pets WHERE character_id = ?').run(char.id);
+      db.prepare('DELETE FROM dungeon_records WHERE character_id = ?').run(char.id);
+      db.prepare('DELETE FROM dungeon_battles WHERE character_id = ?').run(char.id);
+      db.prepare('DELETE FROM characters WHERE user_id = ?').run(id);
+    }
+    db.prepare('DELETE FROM users WHERE id = ?').run(id);
+  });
+
+  transaction();
+  res.json({ message: '用户删除成功' });
+});
+
+router.post('/users/:id/reset-password', adminAuth, (req, res) => {
+  const { id } = req.params;
+  const { newPassword } = req.body;
+
+  if (!newPassword || newPassword.length < 6) {
+    return res.status(400).json({ error: '密码至少6位' });
+  }
+
+  const user = db.prepare('SELECT * FROM users WHERE id = ?').get(id);
+  if (!user) return res.status(404).json({ error: '用户不存在' });
+
+  const password_hash = require('bcryptjs').hashSync(newPassword, 10);
+  db.prepare('UPDATE users SET password_hash = ? WHERE id = ?').run(password_hash, id);
+
+  res.json({ message: '密码重置成功' });
 });
 
 module.exports = router;

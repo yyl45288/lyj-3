@@ -338,6 +338,19 @@ export const adminAPI = {
     const query = new URLSearchParams(params).toString()
     return request(`/admin/users?${query}`)
   },
+  getUser: (id) => request(`/admin/users/${id}`),
+  updateUser: (id, data) =>
+    request(`/admin/users/${id}`, {
+      method: 'PUT',
+      body: JSON.stringify(data)
+    }),
+  deleteUser: (id) =>
+    request(`/admin/users/${id}`, { method: 'DELETE' }),
+  resetUserPassword: (id, newPassword) =>
+    request(`/admin/users/${id}/reset-password`, {
+      method: 'POST',
+      body: JSON.stringify({ newPassword })
+    }),
   getSkills: () => request('/admin/skills'),
   createSkill: (data) =>
     request('/admin/skills', {

@@ -1,6 +1,157 @@
 import { useState, useEffect } from 'react'
 import { adminAPI } from '../api'
 
+const ITEM_TYPES = [
+  { value: 'consumable', label: '消耗品' },
+  { value: 'equipment', label: '装备' },
+  { value: 'material', label: '材料' },
+  { value: 'quest', label: '任务物品' },
+  { value: 'treasure', label: '宝物' }
+]
+
+const ITEM_SUBTYPES = {
+  consumable: [
+    { value: 'pill', label: '丹药' },
+    { value: 'capture', label: '捕捉道具' },
+    { value: 'tribulation', label: '渡劫道具' },
+    { value: 'food', label: '食物' },
+    { value: 'scroll', label: '卷轴' }
+  ],
+  equipment: [
+    { value: 'weapon', label: '武器' },
+    { value: 'helmet', label: '头盔' },
+    { value: 'armor', label: '铠甲' },
+    { value: 'boots', label: '靴子' },
+    { value: 'accessory', label: '饰品' }
+  ],
+  material: [
+    { value: 'ore', label: '矿石' },
+    { value: 'herb', label: '草药' },
+    { value: 'beast_core', label: '兽核' },
+    { value: 'fabric', label: '布料' }
+  ],
+  quest: [
+    { value: 'quest_item', label: '任务物品' }
+  ],
+  treasure: [
+    { value: 'chest', label: '宝箱' },
+    { value: 'gift', label: '礼包' }
+  ]
+}
+
+const EQUIPMENT_SLOTS = [
+  { value: 'weapon', label: '武器' },
+  { value: 'helmet', label: '头盔' },
+  { value: 'armor', label: '铠甲' },
+  { value: 'boots', label: '靴子' },
+  { value: 'accessory', label: '饰品' }
+]
+
+const QUALITIES = [
+  { value: 'common', label: '普通' },
+  { value: 'uncommon', label: '优秀' },
+  { value: 'rare', label: '稀有' },
+  { value: 'epic', label: '史诗' },
+  { value: 'legendary', label: '传说' },
+  { value: 'mythic', label: '神话' }
+]
+
+const STAT_FIELDS = [
+  { value: 'attack', label: '攻击力' },
+  { value: 'defense', label: '防御力' },
+  { value: 'speed', label: '速度' },
+  { value: 'hp', label: '生命值' },
+  { value: 'max_hp', label: '最大生命' },
+  { value: 'mp', label: '灵力值' },
+  { value: 'max_mp', label: '最大灵力' },
+  { value: 'crit_rate', label: '暴击率%' },
+  { value: 'crit_damage', label: '暴击伤害%' },
+  { value: 'dodge', label: '闪避率%' },
+  { value: 'hp_regen', label: '生命回复' },
+  { value: 'mp_regen', label: '灵力回复' }
+]
+
+const EFFECT_TYPES = [
+  { value: 'heal_hp', label: '恢复生命值' },
+  { value: 'heal_mp', label: '恢复灵力值' },
+  { value: 'exp', label: '获得经验' },
+  { value: 'gold', label: '获得金币' },
+  { value: 'capture_bonus', label: '捕捉成功率+%' },
+  { value: 'tribulation_bonus', label: '渡劫成功率+%' },
+  { value: 'buff_attack', label: '攻击力加成%' },
+  { value: 'buff_defense', label: '防御力加成%' },
+  { value: 'buff_speed', label: '速度加成%' },
+  { value: 'revive', label: '原地复活' }
+]
+
+const SKILL_SUBTYPES = [
+  { value: 'damage', label: '普通伤害' },
+  { value: 'damage_crit', label: '暴击伤害' },
+  { value: 'damage_heal', label: '伤害+吸血' },
+  { value: 'damage_aoe', label: '范围伤害' },
+  { value: 'heal', label: '治疗' },
+  { value: 'heal_group', label: '群体治疗' },
+  { value: 'buff', label: '增益效果' },
+  { value: 'debuff', label: '减益效果' },
+  { value: 'shield', label: '护盾' },
+  { value: 'passive', label: '被动加成' }
+]
+
+const DUNGEON_REWARD_FIELDS = [
+  { value: 'gold', label: '金币' },
+  { value: 'exp', label: '经验值' },
+  { value: 'items', label: '物品奖励' }
+]
+
+const REALM_OPTIONS = [
+  { value: '', label: '无要求' },
+  { value: '练气期', label: '练气期' },
+  { value: '筑基期', label: '筑基期' },
+  { value: '金丹期', label: '金丹期' },
+  { value: '元婴期', label: '元婴期' },
+  { value: '化神期', label: '化神期' },
+  { value: '合体期', label: '合体期' },
+  { value: '大乘期', label: '大乘期' },
+  { value: '渡劫期', label: '渡劫期' },
+  { value: '仙人', label: '仙人' }
+]
+
+const TITLE_SOURCES = [
+  { value: 'achievement', label: '成就' },
+  { value: 'event', label: '活动' },
+  { value: 'dungeon', label: '副本' },
+  { value: 'manual', label: '手动发放' },
+  { value: 'vip', label: 'VIP' },
+  { value: 'ranking', label: '排行榜' }
+]
+
+const DAY_TYPE_OPTIONS = [
+  { value: 'daily', label: '每日签到' },
+  { value: 'consecutive', label: '连续签到' },
+  { value: 'cumulative', label: '累计签到' }
+]
+
+const MONSTER_OPTIONS = [
+  { value: 1, label: '1-野兔妖' },
+  { value: 2, label: '2-青蛇妖' },
+  { value: 3, label: '3-野狼妖' },
+  { value: 4, label: '4-黑熊妖' },
+  { value: 5, label: '5-花豹妖' },
+  { value: 6, label: '6-石巨人' },
+  { value: 7, label: '7-树妖' },
+  { value: 8, label: '8-赤焰狐' },
+  { value: 9, label: '9-铁甲犀' },
+  { value: 10, label: '10-毒蜈' },
+  { value: 11, label: '11-沼泽鳄' },
+  { value: 12, label: '12-蛇女' },
+  { value: 13, label: '13-冰狼' },
+  { value: 14, label: '14-雪熊' },
+  { value: 15, label: '15-冰凤' },
+  { value: 16, label: '16-魔将' },
+  { value: 17, label: '17-暗魔' },
+  { value: 18, label: '18-天魔' }
+]
+
 export default function Admin() {
   const [activeTab, setActiveTab] = useState('stats')
   const [stats, setStats] = useState({})
@@ -12,6 +163,7 @@ export default function Admin() {
   const [dungeons, setDungeons] = useState([])
   const [titles, setTitles] = useState([])
   const [afkConfig, setAfkConfig] = useState([])
+  const [itemOptions, setItemOptions] = useState([])
   const [editingAfkConfig, setEditingAfkConfig] = useState(null)
   const [showAfkModal, setShowAfkModal] = useState(false)
   const [afkConfigForm, setAfkConfigForm] = useState({
@@ -26,39 +178,65 @@ export default function Admin() {
   const [showSkillModal, setShowSkillModal] = useState(false)
   const [showDungeonModal, setShowDungeonModal] = useState(false)
   const [showTitleModal, setShowTitleModal] = useState(false)
+  const [showRewardModal, setShowRewardModal] = useState(false)
+  const [showUserModal, setShowUserModal] = useState(false)
   const [editingItem, setEditingItem] = useState(null)
   const [editingAch, setEditingAch] = useState(null)
   const [editingSkill, setEditingSkill] = useState(null)
   const [editingDungeon, setEditingDungeon] = useState(null)
   const [editingTitle, setEditingTitle] = useState(null)
+  const [editingReward, setEditingReward] = useState(null)
+  const [editingUser, setEditingUser] = useState(null)
 
   const [itemForm, setItemForm] = useState({
     name: '', type: '', sub_type: '', quality: 'common', slot: '',
-    price: 0, description: '', effect_str: '', stats_str: ''
+    price: 0, description: '',
+    effectType: '', effectValue: 0,
+    stats: []
   })
+
+  const [skillForm, setSkillForm] = useState({
+    name: '', description: '', type: 'active', subtype: 'damage',
+    levelReq: 1, realmReq: '', mpCost: 10, cooldown: 0, basePower: 10,
+    effectType: '', effectValue: 0, effectMultiplier: 1, effectCritChance: 0, effectCritMultiplier: 1.5, effectStat: '',
+    growthPower: 5, growthValue: 10, growthHeal: 0, growthStat: 0,
+    proficiencyPerLevel: 100, maxLevel: 10,
+    icon: '⚔️', sortOrder: 1
+  })
+
+  const [dungeonForm, setDungeonForm] = useState({
+    name: '', description: '', levelReq: 1, realmReq: '', dailyLimit: 3,
+    waves: [[], [], []],
+    firstClearGold: 0, firstClearExp: 0, firstClearItems: [],
+    clearGold: 0, clearExp: 0, clearItems: [],
+    icon: '🏰', sortOrder: 1
+  })
+
+  const [titleForm, setTitleForm] = useState({
+    name: '', description: '', source: 'achievement', sourceId: 0,
+    stats: [],
+    icon: '🏅', quality: 'common', sortOrder: 1
+  })
+
+  const [rewardForm, setRewardForm] = useState({
+    dayType: 'daily', dayNumber: 0,
+    gold: 0, exp: 0, items: [],
+    sortOrder: 0
+  })
+
+  const [userForm, setUserForm] = useState({
+    gold: 0, exp: 0, level: 1, realm: '',
+    attack: 0, defense: 0, speed: 0,
+    maxHp: 0, maxMp: 0, hp: 0, mp: 0
+  })
+  const [resetPwdModal, setResetPwdModal] = useState(false)
+  const [resetPwdUserId, setResetPwdUserId] = useState(null)
+  const [resetPwdValue, setResetPwdValue] = useState('')
 
   const [achForm, setAchForm] = useState({
     name: '', description: '', type: 'cultivate', target_value: 1,
     title: '', icon: '🏆', sort_order: 1,
     rewardGold: 0, rewardExp: 0, rewardItems: []
-  })
-
-  const [skillForm, setSkillForm] = useState({
-    name: '', description: '', type: 'active', subtype: 'damage',
-    level_req: 1, realm_req: 0, mp_cost: 10, cooldown: 0, base_power: 10,
-    effect_str: '', growth_str: '', proficiency_per_level: 100, max_level: 10,
-    icon: '⚔️', sort_order: 1
-  })
-
-  const [dungeonForm, setDungeonForm] = useState({
-    name: '', description: '', level_req: 1, realm_req: 0, daily_limit: 3,
-    monsters_str: '', first_clear_rewards_str: '', clear_rewards_str: '',
-    icon: '🏰', sort_order: 1
-  })
-
-  const [titleForm, setTitleForm] = useState({
-    name: '', description: '', source: 'achievement', source_id: 0,
-    stats_str: '', icon: '🏅', quality: 'common', sort_order: 1
   })
 
   const tabs = [
@@ -86,6 +264,11 @@ export default function Admin() {
   const loadTabData = async (tab) => {
     setLoading(true)
     try {
+      if (itemOptions.length === 0) {
+        const data = await adminAPI.getItems({ pageSize: 500 })
+        const opts = (data.items || data || []).map(i => ({ value: i.id, label: `#${i.id} ${i.name}` }))
+        setItemOptions(opts)
+      }
       switch (tab) {
         case 'stats': {
           const data = await adminAPI.getStats()
@@ -140,16 +323,58 @@ export default function Admin() {
     }
   }
 
+  const addItemStat = () => {
+    setItemForm({ ...itemForm, stats: [...itemForm.stats, { stat: 'attack', value: 0 }] })
+  }
+  const updateItemStat = (idx, field, value) => {
+    const s = [...itemForm.stats]
+    s[idx] = { ...s[idx], [field]: field === 'value' ? parseInt(value) || 0 : value }
+    setItemForm({ ...itemForm, stats: s })
+  }
+  const removeItemStat = (idx) => {
+    setItemForm({ ...itemForm, stats: itemForm.stats.filter((_, i) => i !== idx) })
+  }
+
+  const parseEffectToForm = (effect) => {
+    if (!effect) return { effectType: '', effectValue: 0 }
+    const e = typeof effect === 'string' ? JSON.parse(effect) : effect
+    const type = e.type || e.saveOnFail ? 'tribulation_bonus' : ''
+    const value = e.value || e.healPercent || 0
+    return { effectType: type, effectValue: value, effectSaveOnFail: !!e.saveOnFail }
+  }
+
+  const parseStatsToForm = (stats) => {
+    if (!stats) return []
+    const s = typeof stats === 'string' ? JSON.parse(stats) : stats
+    return Object.entries(s).map(([stat, value]) => ({ stat, value }))
+  }
+
+  const formStatsToObject = (arr) => {
+    const obj = {}
+    arr.forEach(s => { if (s.stat) obj[s.stat] = parseInt(s.value) || 0 })
+    return Object.keys(obj).length > 0 ? obj : null
+  }
+
+  const formEffectToObject = (type, value, saveOnFail) => {
+    if (!type) return null
+    const obj = { type, value: parseInt(value) || 0 }
+    if (saveOnFail) obj.saveOnFail = true
+    return obj
+  }
+
   const openNewItem = () => {
     setEditingItem(null)
     setItemForm({
       name: '', type: '', sub_type: '', quality: 'common', slot: '',
-      price: 0, description: '', effect_str: '', stats_str: ''
+      price: 0, description: '',
+      effectType: '', effectValue: 0,
+      stats: []
     })
     setShowItemModal(true)
   }
 
   const openEditItem = (item) => {
+    const eff = parseEffectToForm(item.effect)
     setEditingItem(item)
     setItemForm({
       name: item.name || '',
@@ -159,8 +384,10 @@ export default function Admin() {
       slot: item.slot || '',
       price: item.price || 0,
       description: item.description || '',
-      effect_str: item.effect ? (typeof item.effect === 'string' ? item.effect : JSON.stringify(item.effect)) : '',
-      stats_str: item.stats ? (typeof item.stats === 'string' ? item.stats : JSON.stringify(item.stats)) : ''
+      effectType: eff.effectType || '',
+      effectValue: eff.effectValue || 0,
+      effectSaveOnFail: eff.effectSaveOnFail || false,
+      stats: parseStatsToForm(item.stats)
     })
     setShowItemModal(true)
   }
@@ -179,8 +406,8 @@ export default function Admin() {
         slot: itemForm.slot,
         price: parseInt(itemForm.price) || 0,
         description: itemForm.description,
-        effect: itemForm.effect_str ? JSON.parse(itemForm.effect_str) : null,
-        stats: itemForm.stats_str ? JSON.parse(itemForm.stats_str) : null
+        effect: formEffectToObject(itemForm.effectType, itemForm.effectValue, itemForm.effectSaveOnFail),
+        stats: formStatsToObject(itemForm.stats)
       }
       if (editingItem) {
         await adminAPI.updateItem(editingItem.id, data)
@@ -191,6 +418,9 @@ export default function Admin() {
       }
       setShowItemModal(false)
       loadTabData('items')
+      const data2 = await adminAPI.getItems({ pageSize: 500 })
+      const opts = (data2.items || data2 || []).map(i => ({ value: i.id, label: `#${i.id} ${i.name}` }))
+      setItemOptions(opts)
     } catch (err) {
       showMsg(err.message || '保存失败', 'error')
     }
@@ -284,30 +514,84 @@ export default function Admin() {
     }
   }
 
+  const parseSkillEffectToForm = (effect) => {
+    if (!effect) return {}
+    const e = typeof effect === 'string' ? JSON.parse(effect) : effect
+    return {
+      effectType: e.type || '',
+      effectValue: e.value || 0,
+      effectMultiplier: e.multiplier || 1,
+      effectCritChance: e.critChance || 0,
+      effectCritMultiplier: e.critMultiplier || 1.5,
+      effectHealPercent: e.healPercent || 0,
+      effectStat: e.stat || '',
+      effectStatValue: e.statValue || 0
+    }
+  }
+
+  const parseSkillGrowthToForm = (growth) => {
+    if (!growth) return {}
+    const g = typeof growth === 'string' ? JSON.parse(growth) : growth
+    return {
+      growthPower: g.powerPerLevel || 5,
+      growthValue: g.valuePerLevel || 10,
+      growthHeal: g.healPerLevel || 0,
+      growthStat: g.statPerLevel || 0,
+      growthCritChance: g.critChancePerLevel || 0
+    }
+  }
+
+  const formSkillEffectToObject = (f) => {
+    if (!f.effectType) return null
+    const obj = { type: f.effectType }
+    if (f.effectValue) obj.value = parseInt(f.effectValue) || 0
+    if (f.effectMultiplier && f.effectMultiplier !== 1) obj.multiplier = parseFloat(f.effectMultiplier) || 1
+    if (f.effectCritChance) obj.critChance = parseFloat(f.effectCritChance) || 0
+    if (f.effectCritMultiplier && f.effectCritMultiplier !== 1.5) obj.critMultiplier = parseFloat(f.effectCritMultiplier) || 1.5
+    if (f.effectHealPercent) obj.healPercent = parseFloat(f.effectHealPercent) || 0
+    if (f.effectStat) { obj.stat = f.effectStat; obj.statValue = parseInt(f.effectStatValue) || 0 }
+    return obj
+  }
+
+  const formSkillGrowthToObject = (f) => {
+    const obj = {}
+    if (f.growthPower) obj.powerPerLevel = parseInt(f.growthPower) || 0
+    if (f.growthValue) obj.valuePerLevel = parseInt(f.growthValue) || 0
+    if (f.growthHeal) obj.healPerLevel = parseFloat(f.growthHeal) || 0
+    if (f.growthStat) obj.statPerLevel = parseInt(f.growthStat) || 0
+    if (f.growthCritChance) obj.critChancePerLevel = parseFloat(f.growthCritChance) || 0
+    return Object.keys(obj).length > 0 ? obj : null
+  }
+
   const openNewSkill = () => {
     setEditingSkill(null)
     setSkillForm({
       name: '', description: '', type: 'active', subtype: 'damage',
-      level_req: 1, realm_req: 0, mp_cost: 10, cooldown: 0, base_power: 10,
-      effect_str: '', growth_str: '', proficiency_per_level: 100, max_level: 10,
-      icon: '⚔️', sort_order: 1
+      levelReq: 1, realmReq: '', mpCost: 10, cooldown: 0, basePower: 10,
+      effectType: '', effectValue: 0, effectMultiplier: 1, effectCritChance: 0, effectCritMultiplier: 1.5, effectStat: '', effectStatValue: 0, effectHealPercent: 0,
+      growthPower: 5, growthValue: 10, growthHeal: 0, growthStat: 0, growthCritChance: 0,
+      proficiencyPerLevel: 100, maxLevel: 10,
+      icon: '⚔️', sortOrder: 1
     })
     setShowSkillModal(true)
   }
 
   const openEditSkill = (skill) => {
     setEditingSkill(skill)
+    const eff = parseSkillEffectToForm(skill.effect)
+    const grw = parseSkillGrowthToForm(skill.growth)
     setSkillForm({
       name: skill.name || '', description: skill.description || '',
       type: skill.type || 'active', subtype: skill.subtype || 'damage',
-      level_req: skill.level_req || 1, realm_req: skill.realm_req || 0,
-      mp_cost: skill.mp_cost || 0, cooldown: skill.cooldown || 0,
-      base_power: skill.base_power || 0,
-      effect_str: skill.effect ? (typeof skill.effect === 'string' ? skill.effect : JSON.stringify(skill.effect)) : '',
-      growth_str: skill.growth ? (typeof skill.growth === 'string' ? skill.growth : JSON.stringify(skill.growth)) : '',
-      proficiency_per_level: skill.proficiency_per_level || 100,
-      max_level: skill.max_level || 10,
-      icon: skill.icon || '⚔️', sort_order: skill.sort_order || 1
+      levelReq: skill.level_req || skill.levelReq || 1,
+      realmReq: skill.realm_req || skill.realmReq || '',
+      mpCost: skill.mp_cost || skill.mpCost || 0,
+      cooldown: skill.cooldown || 0,
+      basePower: skill.base_power || skill.basePower || 0,
+      proficiencyPerLevel: skill.proficiency_per_level || skill.proficiencyPerLevel || 100,
+      maxLevel: skill.max_level || skill.maxLevel || 10,
+      icon: skill.icon || '⚔️', sortOrder: skill.sort_order || skill.sortOrder || 1,
+      ...eff, ...grw
     })
     setShowSkillModal(true)
   }
@@ -321,17 +605,17 @@ export default function Admin() {
       const data = {
         name: skillForm.name, description: skillForm.description,
         type: skillForm.type, subtype: skillForm.subtype,
-        levelReq: parseInt(skillForm.level_req) || 1,
-        realmReq: parseInt(skillForm.realm_req) || 0,
-        mpCost: parseInt(skillForm.mp_cost) || 0,
+        levelReq: parseInt(skillForm.levelReq) || 1,
+        realmReq: skillForm.realmReq || null,
+        mpCost: parseInt(skillForm.mpCost) || 0,
         cooldown: parseInt(skillForm.cooldown) || 0,
-        basePower: parseInt(skillForm.base_power) || 0,
-        effect: skillForm.effect_str ? JSON.parse(skillForm.effect_str) : null,
-        growth: skillForm.growth_str ? JSON.parse(skillForm.growth_str) : null,
-        proficiencyPerLevel: parseInt(skillForm.proficiency_per_level) || 100,
-        maxLevel: parseInt(skillForm.max_level) || 10,
+        basePower: parseInt(skillForm.basePower) || 0,
+        effect: formSkillEffectToObject(skillForm),
+        growth: formSkillGrowthToObject(skillForm),
+        proficiencyPerLevel: parseInt(skillForm.proficiencyPerLevel) || 100,
+        maxLevel: parseInt(skillForm.maxLevel) || 10,
         icon: skillForm.icon,
-        sortOrder: parseInt(skillForm.sort_order) || 1
+        sortOrder: parseInt(skillForm.sortOrder) || 1
       }
       if (editingSkill) {
         await adminAPI.updateSkill(editingSkill.id, data)
@@ -358,27 +642,90 @@ export default function Admin() {
     }
   }
 
+  const addWave = () => {
+    setDungeonForm({ ...dungeonForm, waves: [...dungeonForm.waves, []] })
+  }
+  const removeWave = (idx) => {
+    const w = dungeonForm.waves.filter((_, i) => i !== idx)
+    setDungeonForm({ ...dungeonForm, waves: w.length ? w : [[]] })
+  }
+  const toggleMonsterInWave = (waveIdx, monsterId) => {
+    const w = dungeonForm.waves.map((wave, i) => {
+      if (i !== waveIdx) return wave
+      if (wave.includes(monsterId)) return wave.filter(id => id !== monsterId)
+      return [...wave, monsterId]
+    })
+    setDungeonForm({ ...dungeonForm, waves: w })
+  }
+
+  const addRewardItem = (formKey, itemKey) => {
+    setDungeonForm({ ...dungeonForm, [formKey]: [...dungeonForm[formKey], { itemId: '', quantity: 1 }] })
+  }
+  const updateRewardItem = (formKey, idx, field, value) => {
+    const arr = dungeonForm[formKey].map((it, i) => i === idx ? { ...it, [field]: field === 'quantity' ? parseInt(value) || 0 : parseInt(value) || '' } : it)
+    setDungeonForm({ ...dungeonForm, [formKey]: arr })
+  }
+  const removeRewardItem = (formKey, idx) => {
+    setDungeonForm({ ...dungeonForm, [formKey]: dungeonForm[formKey].filter((_, i) => i !== idx) })
+  }
+
+  const parseDungeonToForm = (d) => {
+    const waves = d.monsters ? (typeof d.monsters === 'string' ? JSON.parse(d.monsters) : d.monsters) : [[], [], []]
+    const fcr = d.first_clear_rewards ? (typeof d.first_clear_rewards === 'string' ? JSON.parse(d.first_clear_rewards) : d.first_clear_rewards) : {}
+    const cr = d.clear_rewards ? (typeof d.clear_rewards === 'string' ? JSON.parse(d.clear_rewards) : d.clear_rewards) : {}
+    return {
+      name: d.name || '', description: d.description || '',
+      levelReq: d.level_req || d.levelReq || 1,
+      realmReq: d.realm_req || d.realmReq || '',
+      dailyLimit: d.daily_limit || d.dailyLimit || 3,
+      waves: Array.isArray(waves) && waves.length ? waves : [[], [], []],
+      firstClearGold: fcr.gold || 0, firstClearExp: fcr.exp || 0, firstClearItems: fcr.items || [],
+      clearGold: cr.gold || 0, clearExp: cr.exp || 0, clearItems: cr.items || [],
+      icon: d.icon || '🏰', sortOrder: d.sort_order || d.sortOrder || 1
+    }
+  }
+
+  const formDungeonToData = (f) => {
+    const firstClearRewards = {}
+    if (f.firstClearGold > 0) firstClearRewards.gold = parseInt(f.firstClearGold)
+    if (f.firstClearExp > 0) firstClearRewards.exp = parseInt(f.firstClearExp)
+    const fci = (f.firstClearItems || []).filter(i => i.itemId && i.quantity > 0)
+    if (fci.length) firstClearRewards.items = fci.map(i => ({ itemId: parseInt(i.itemId), quantity: parseInt(i.quantity) }))
+
+    const clearRewards = {}
+    if (f.clearGold > 0) clearRewards.gold = parseInt(f.clearGold)
+    if (f.clearExp > 0) clearRewards.exp = parseInt(f.clearExp)
+    const ci = (f.clearItems || []).filter(i => i.itemId && i.quantity > 0)
+    if (ci.length) clearRewards.items = ci.map(i => ({ itemId: parseInt(i.itemId), quantity: parseInt(i.quantity) }))
+
+    return {
+      name: f.name, description: f.description,
+      levelReq: parseInt(f.levelReq) || 1,
+      realmReq: f.realmReq || null,
+      dailyLimit: parseInt(f.dailyLimit) || 3,
+      monsters: f.waves,
+      firstClearRewards: Object.keys(firstClearRewards).length ? firstClearRewards : null,
+      clearRewards: Object.keys(clearRewards).length ? clearRewards : null,
+      icon: f.icon,
+      sortOrder: parseInt(f.sortOrder) || 1
+    }
+  }
+
   const openNewDungeon = () => {
     setEditingDungeon(null)
     setDungeonForm({
-      name: '', description: '', level_req: 1, realm_req: 0, daily_limit: 3,
-      monsters_str: '', first_clear_rewards_str: '', clear_rewards_str: '',
-      icon: '🏰', sort_order: 1
+      name: '', description: '', levelReq: 1, realmReq: '', dailyLimit: 3,
+      waves: [[], [], []],
+      firstClearGold: 0, firstClearExp: 0, firstClearItems: [],
+      clearGold: 0, clearExp: 0, clearItems: [],
+      icon: '🏰', sortOrder: 1
     })
     setShowDungeonModal(true)
   }
 
   const openEditDungeon = (d) => {
     setEditingDungeon(d)
-    setDungeonForm({
-      name: d.name || '', description: d.description || '',
-      level_req: d.level_req || 1, realm_req: d.realm_req || 0,
-      daily_limit: d.daily_limit || 3,
-      monsters_str: d.monsters ? (typeof d.monsters === 'string' ? d.monsters : JSON.stringify(d.monsters)) : '',
-      first_clear_rewards_str: d.first_clear_rewards ? (typeof d.first_clear_rewards === 'string' ? d.first_clear_rewards : JSON.stringify(d.first_clear_rewards)) : '',
-      clear_rewards_str: d.clear_rewards ? (typeof d.clear_rewards === 'string' ? d.clear_rewards : JSON.stringify(d.clear_rewards)) : '',
-      icon: d.icon || '🏰', sort_order: d.sort_order || 1
-    })
+    setDungeonForm(parseDungeonToForm(d))
     setShowDungeonModal(true)
   }
 
@@ -388,17 +735,7 @@ export default function Admin() {
       return
     }
     try {
-      const data = {
-        name: dungeonForm.name, description: dungeonForm.description,
-        levelReq: parseInt(dungeonForm.level_req) || 1,
-        realmReq: parseInt(dungeonForm.realm_req) || 0,
-        dailyLimit: parseInt(dungeonForm.daily_limit) || 3,
-        monsters: dungeonForm.monsters_str ? JSON.parse(dungeonForm.monsters_str) : [],
-        firstClearRewards: dungeonForm.first_clear_rewards_str ? JSON.parse(dungeonForm.first_clear_rewards_str) : {},
-        clearRewards: dungeonForm.clear_rewards_str ? JSON.parse(dungeonForm.clear_rewards_str) : {},
-        icon: dungeonForm.icon,
-        sortOrder: parseInt(dungeonForm.sort_order) || 1
-      }
+      const data = formDungeonToData(dungeonForm)
       if (editingDungeon) {
         await adminAPI.updateDungeon(editingDungeon.id, data)
         showMsg('副本更新成功')
@@ -409,7 +746,7 @@ export default function Admin() {
       setShowDungeonModal(false)
       loadTabData('dungeons')
     } catch (err) {
-      showMsg(err.message || '保存失败，请检查JSON格式', 'error')
+      showMsg(err.message || '保存失败', 'error')
     }
   }
 
@@ -424,11 +761,24 @@ export default function Admin() {
     }
   }
 
+  const addTitleStat = () => {
+    setTitleForm({ ...titleForm, stats: [...titleForm.stats, { stat: 'attack', value: 0 }] })
+  }
+  const updateTitleStat = (idx, field, value) => {
+    const s = [...titleForm.stats]
+    s[idx] = { ...s[idx], [field]: field === 'value' ? parseInt(value) || 0 : value }
+    setTitleForm({ ...titleForm, stats: s })
+  }
+  const removeTitleStat = (idx) => {
+    setTitleForm({ ...titleForm, stats: titleForm.stats.filter((_, i) => i !== idx) })
+  }
+
   const openNewTitle = () => {
     setEditingTitle(null)
     setTitleForm({
-      name: '', description: '', source: 'achievement', source_id: 0,
-      stats_str: '', icon: '🏅', quality: 'common', sort_order: 1
+      name: '', description: '', source: 'achievement', sourceId: 0,
+      stats: [],
+      icon: '🏅', quality: 'common', sortOrder: 1
     })
     setShowTitleModal(true)
   }
@@ -437,10 +787,11 @@ export default function Admin() {
     setEditingTitle(t)
     setTitleForm({
       name: t.name || '', description: t.description || '',
-      source: t.source || 'achievement', source_id: t.source_id || 0,
-      stats_str: t.stats ? (typeof t.stats === 'string' ? t.stats : JSON.stringify(t.stats)) : '',
+      source: t.source || 'achievement',
+      sourceId: t.source_id || t.sourceId || 0,
+      stats: parseStatsToForm(t.stats),
       icon: t.icon || '🏅', quality: t.quality || 'common',
-      sort_order: t.sort_order || 1
+      sortOrder: t.sort_order || t.sortOrder || 1
     })
     setShowTitleModal(true)
   }
@@ -454,10 +805,10 @@ export default function Admin() {
       const data = {
         name: titleForm.name, description: titleForm.description,
         source: titleForm.source,
-        sourceId: parseInt(titleForm.source_id) || 0,
-        stats: titleForm.stats_str ? JSON.parse(titleForm.stats_str) : {},
+        sourceId: parseInt(titleForm.sourceId) || 0,
+        stats: formStatsToObject(titleForm.stats),
         icon: titleForm.icon, quality: titleForm.quality,
-        sortOrder: parseInt(titleForm.sort_order) || 1
+        sortOrder: parseInt(titleForm.sortOrder) || 1
       }
       if (editingTitle) {
         await adminAPI.updateTitle(editingTitle.id, data)
@@ -469,7 +820,161 @@ export default function Admin() {
       setShowTitleModal(false)
       loadTabData('titles')
     } catch (err) {
-      showMsg(err.message || '保存失败，请检查JSON格式', 'error')
+      showMsg(err.message || '保存失败', 'error')
+    }
+  }
+
+  const addRewardSigItem = () => {
+    setRewardForm({ ...rewardForm, items: [...rewardForm.items, { itemId: '', quantity: 1 }] })
+  }
+  const updateRewardSigItem = (idx, field, value) => {
+    const arr = rewardForm.items.map((it, i) => i === idx ? { ...it, [field]: field === 'quantity' ? parseInt(value) || 0 : parseInt(value) || '' } : it)
+    setRewardForm({ ...rewardForm, items: arr })
+  }
+  const removeRewardSigItem = (idx) => {
+    setRewardForm({ ...rewardForm, items: rewardForm.items.filter((_, i) => i !== idx) })
+  }
+
+  const parseRewardToForm = (r) => {
+    const rw = r.rewards ? (typeof r.rewards === 'string' ? JSON.parse(r.rewards) : r.rewards) : {}
+    return {
+      dayType: r.day_type || r.dayType || 'daily',
+      dayNumber: r.day_number || r.dayNumber || 0,
+      gold: rw.gold || 0, exp: rw.exp || 0,
+      items: rw.items || [],
+      sortOrder: r.sort_order || r.sortOrder || 0
+    }
+  }
+  const formRewardToData = (f) => {
+    const rewards = {}
+    if (f.gold > 0) rewards.gold = parseInt(f.gold)
+    if (f.exp > 0) rewards.exp = parseInt(f.exp)
+    const it = (f.items || []).filter(i => i.itemId && i.quantity > 0)
+    if (it.length) rewards.items = it.map(i => ({ itemId: parseInt(i.itemId), quantity: parseInt(i.quantity) }))
+    return {
+      dayType: f.dayType,
+      dayNumber: f.dayType === 'daily' ? null : (parseInt(f.dayNumber) || 1),
+      rewards: Object.keys(rewards).length ? rewards : {},
+      sortOrder: parseInt(f.sortOrder) || 0
+    }
+  }
+
+  const openNewReward = () => {
+    setEditingReward(null)
+    setRewardForm({
+      dayType: 'daily', dayNumber: 0,
+      gold: 0, exp: 0, items: [],
+      sortOrder: 0
+    })
+    setShowRewardModal(true)
+  }
+  const openEditReward = (r) => {
+    setEditingReward(r)
+    setRewardForm(parseRewardToForm(r))
+    setShowRewardModal(true)
+  }
+  const saveReward = async () => {
+    if (rewardForm.dayType !== 'daily' && (!rewardForm.dayNumber || rewardForm.dayNumber < 1)) {
+      showMsg('请填写签到天数', 'error'); return
+    }
+    try {
+      const data = formRewardToData(rewardForm)
+      if (editingReward) {
+        await adminAPI.updateSignInReward(editingReward.id, data)
+        showMsg('签到奖励更新成功')
+      } else {
+        await adminAPI.createSignInReward(data)
+        showMsg('签到奖励创建成功')
+      }
+      setShowRewardModal(false)
+      loadTabData('rewards')
+    } catch (err) {
+      showMsg(err.message || '保存失败', 'error')
+    }
+  }
+  const deleteReward = async (id) => {
+    if (!window.confirm('确定要删除该签到奖励吗？此操作不可恢复。')) return
+    try {
+      await adminAPI.deleteSignInReward(id)
+      showMsg('签到奖励已删除')
+      loadTabData('rewards')
+    } catch (err) {
+      showMsg(err.message || '删除失败', 'error')
+    }
+  }
+
+  const openEditUser = async (u) => {
+    try {
+      const data = await adminAPI.getUser(u.id)
+      const user = data.user || u
+      setEditingUser(user)
+      setUserForm({
+        gold: user.gold != null ? user.gold : 0,
+        exp: user.exp != null ? user.exp : 0,
+        level: user.level || 1,
+        realm: user.realm || '',
+        attack: user.attack != null ? user.attack : 0,
+        defense: user.defense != null ? user.defense : 0,
+        speed: user.speed != null ? user.speed : 0,
+        maxHp: user.max_hp != null ? user.max_hp : 0,
+        maxMp: user.max_mp != null ? user.max_mp : 0,
+        hp: user.hp != null ? user.hp : 0,
+        mp: user.mp != null ? user.mp : 0
+      })
+      setShowUserModal(true)
+    } catch (err) {
+      showMsg(err.message || '加载用户失败', 'error')
+    }
+  }
+  const saveUser = async () => {
+    if (!editingUser) return
+    try {
+      const data = {
+        gold: parseInt(userForm.gold) || 0,
+        exp: parseInt(userForm.exp) || 0,
+        level: parseInt(userForm.level) || 1,
+        realm: userForm.realm || null,
+        attack: parseInt(userForm.attack) || 0,
+        defense: parseInt(userForm.defense) || 0,
+        speed: parseInt(userForm.speed) || 0,
+        maxHp: parseInt(userForm.maxHp) || 0,
+        maxMp: parseInt(userForm.maxMp) || 0,
+        hp: parseInt(userForm.hp) || 0,
+        mp: parseInt(userForm.mp) || 0
+      }
+      await adminAPI.updateUser(editingUser.id, data)
+      showMsg('用户数据更新成功')
+      setShowUserModal(false)
+      loadTabData('users')
+    } catch (err) {
+      showMsg(err.message || '保存失败', 'error')
+    }
+  }
+  const deleteUser = async (id, username) => {
+    if (!window.confirm(`确定要删除用户「${username}」吗？此操作不可恢复，将删除该用户的所有数据！`)) return
+    try {
+      await adminAPI.deleteUser(id)
+      showMsg(`用户「${username}」已删除`)
+      loadTabData('users')
+    } catch (err) {
+      showMsg(err.message || '删除失败', 'error')
+    }
+  }
+  const openResetPwd = (id) => {
+    setResetPwdUserId(id)
+    setResetPwdValue('')
+    setResetPwdModal(true)
+  }
+  const confirmResetPwd = async () => {
+    if (!resetPwdValue || resetPwdValue.length < 6) {
+      showMsg('密码至少6位', 'error'); return
+    }
+    try {
+      await adminAPI.resetUserPassword(resetPwdUserId, resetPwdValue)
+      showMsg('密码重置成功')
+      setResetPwdModal(false)
+    } catch (err) {
+      showMsg(err.message || '重置失败', 'error')
     }
   }
 
@@ -522,20 +1027,20 @@ export default function Admin() {
     min_collect_minutes: '最小领取间隔(分钟)'
   })[key] || key
 
-  const addRewardItem = () => {
+  const achAddRewardItem = () => {
     setAchForm({
       ...achForm,
       rewardItems: [...achForm.rewardItems, { itemId: '', quantity: 1 }]
     })
   }
 
-  const updateRewardItem = (idx, field, value) => {
+  const achUpdateRewardItem = (idx, field, value) => {
     const newItems = [...achForm.rewardItems]
     newItems[idx] = { ...newItems[idx], [field]: field === 'quantity' ? parseInt(value) || 0 : value }
     setAchForm({ ...achForm, rewardItems: newItems })
   }
 
-  const removeRewardItem = (idx) => {
+  const achRemoveRewardItem = (idx) => {
     const newItems = achForm.rewardItems.filter((_, i) => i !== idx)
     setAchForm({ ...achForm, rewardItems: newItems })
   }
@@ -545,10 +1050,41 @@ export default function Admin() {
     legendary: '#ff8000', mythic: '#e60000'
   })[q] || '#cccccc'
 
+  const qualityText = (q) => ({
+    common: '普通', uncommon: '优秀', rare: '稀有', epic: '史诗',
+    legendary: '传说', mythic: '神话'
+  })[q] || q
+
+  const itemTypeText = (t) => ({
+    consumable: '消耗品', equipment: '装备', material: '材料',
+    quest: '任务物品', treasure: '宝物'
+  })[t] || t
+
+  const itemSubtypeText = (t) => ({
+    pill: '丹药', capture: '捕捉道具', tribulation: '渡劫道具', food: '食物', scroll: '卷轴',
+    weapon: '武器', helmet: '头盔', armor: '铠甲', boots: '靴子', accessory: '饰品',
+    ore: '矿石', herb: '草药', beast_core: '兽核', fabric: '布料',
+    quest_item: '任务物品', chest: '宝箱', gift: '礼包'
+  })[t] || t
+
+  const slotText = (s) => ({
+    weapon: '武器', helmet: '头盔', armor: '铠甲', boots: '靴子', accessory: '饰品'
+  })[s] || s
+
   const achTypeText = (t) => ({
     cultivate: '修炼次数', combat: '战斗胜利', gold: '金币累计', realm: '境界等级',
     sign_in: '累计签到', consecutive_sign_in: '连续签到', pet_catch: '宠物捕获', quest_complete: '任务完成'
   })[t] || t
+
+  const skillSubtypeText = (s) => {
+    const opt = SKILL_SUBTYPES.find(o => o.value === s)
+    return opt ? opt.label : s
+  }
+
+  const titleSourceText = (s) => {
+    const opt = TITLE_SOURCES.find(o => o.value === s)
+    return opt ? opt.label : s
+  }
 
   return (
     <div className="admin-page">
@@ -599,17 +1135,30 @@ export default function Admin() {
                 <table>
                   <thead><tr>
                     <th>ID</th><th>名称</th><th>类型</th><th>子类型</th>
-                    <th>品质</th><th>价格</th><th>操作</th>
+                    <th>品质</th><th>价格</th><th>属性/效果</th><th>操作</th>
                   </tr></thead>
                   <tbody>
                     {items.map(item => (
                       <tr key={item.id}>
                         <td>{item.id}</td>
                         <td style={{ color: qualityColor(item.quality), fontWeight: 700 }}>{item.name}</td>
-                        <td>{item.type}</td>
-                        <td>{item.sub_type || '-'}</td>
-                        <td><span style={{ color: qualityColor(item.quality) }}>{item.quality}</span></td>
+                        <td>{itemTypeText(item.type)}</td>
+                        <td>{item.sub_type ? itemSubtypeText(item.sub_type) : '-'}</td>
+                        <td><span style={{ color: qualityColor(item.quality) }}>{qualityText(item.quality)}</span></td>
                         <td>{item.price}</td>
+                        <td style={{ color: '#7ec8e3', fontSize: '0.8rem', maxWidth: '250px' }}>
+                          {item.stats && typeof item.stats === 'object'
+                            ? Object.entries(item.stats).map(([k, v]) => {
+                                const sf = STAT_FIELDS.find(s => s.value === k)
+                                return `${sf ? sf.label : k}+${v}`
+                              }).join(' ')
+                            : item.effect && typeof item.effect === 'object'
+                            ? (() => {
+                                const ef = EFFECT_TYPES.find(e => e.value === item.effect.type)
+                                return ef ? `${ef.label}${item.effect.value || ''}` : '特殊效果'
+                              })()
+                            : '-'}
+                        </td>
                         <td>
                           <button className="btn-primary" style={{ padding: '0.3rem 0.8rem', fontSize: '0.8rem', marginRight: '0.5rem' }} onClick={() => openEditItem(item)}>编辑</button>
                           <button className="btn-primary" style={{ padding: '0.3rem 0.8rem', fontSize: '0.8rem', background: '#c0392b' }} onClick={() => deleteItem(item.id, item.name)}>删除</button>
@@ -674,12 +1223,12 @@ export default function Admin() {
                         <td style={{ fontSize: '1.2rem' }}>{s.icon}</td>
                         <td>{s.name}</td>
                         <td style={{ color: s.type === 'active' ? '#e67e22' : '#9b59b6' }}>
-                          {s.type === 'active' ? '主动' : '被动'}
+                          {s.type === 'active' ? '主动技能' : '被动技能'}
                         </td>
-                        <td>{s.subtype || '-'}</td>
-                        <td>Lv.{s.level_req}</td>
-                        <td>{s.mp_cost || 0}</td>
-                        <td>{s.base_power || 0}</td>
+                        <td>{s.subtype ? skillSubtypeText(s.subtype) : '-'}</td>
+                        <td>Lv.{s.level_req || s.levelReq}</td>
+                        <td>{s.mp_cost ?? s.mpCost ?? 0}</td>
+                        <td>{s.base_power ?? s.basePower ?? 0}</td>
                         <td>
                           <button className="btn-primary" style={{ padding: '0.3rem 0.8rem', fontSize: '0.8rem', marginRight: '0.5rem' }} onClick={() => openEditSkill(s)}>编辑</button>
                           <button className="btn-primary" style={{ padding: '0.3rem 0.8rem', fontSize: '0.8rem', background: '#c0392b' }} onClick={() => deleteSkill(s.id, s.name)}>删除</button>
@@ -743,11 +1292,14 @@ export default function Admin() {
                         <td>{t.id}</td>
                         <td style={{ fontSize: '1.2rem' }}>{t.icon}</td>
                         <td style={{ color: qualityColor(t.quality), fontWeight: 700 }}>{t.name}</td>
-                        <td><span style={{ color: qualityColor(t.quality) }}>{t.quality}</span></td>
-                        <td>{t.source || '-'}</td>
+                        <td><span style={{ color: qualityColor(t.quality) }}>{qualityText(t.quality)}</span></td>
+                        <td>{titleSourceText(t.source)}</td>
                         <td style={{ color: '#7ec8e3', fontSize: '0.85rem' }}>
                           {t.stats && typeof t.stats === 'object'
-                            ? Object.entries(t.stats).map(([k, v]) => `${k}+${v}`).join(' ')
+                            ? Object.entries(t.stats).map(([k, v]) => {
+                                const sf = STAT_FIELDS.find(s => s.value === k)
+                                return `${sf ? sf.label : k}+${v}`
+                              }).join(' ')
                             : '-'}
                         </td>
                         <td>
@@ -764,21 +1316,37 @@ export default function Admin() {
 
           {activeTab === 'rewards' && (
             <div>
-              <div className="card-title">签到奖励配置</div>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
+                <div className="card-title" style={{ marginBottom: 0 }}>签到奖励配置</div>
+                <button className="btn-primary" onClick={openNewReward}>+ 新增奖励</button>
+              </div>
               <div className="admin-table">
                 <table>
-                  <thead><tr><th>ID</th><th>类型</th><th>天数</th><th>奖励内容</th></tr></thead>
+                  <thead><tr><th>ID</th><th>类型</th><th>天数</th><th>奖励内容</th><th>操作</th></tr></thead>
                   <tbody>
-                    {signInRewards.map(r => (
-                      <tr key={r.id}>
-                        <td>{r.id}</td>
-                        <td>{r.day_type === 'daily' ? '每日签到' : `连续${r.day_number}天`}</td>
-                        <td>{r.day_type === 'daily' ? '-' : r.day_number}</td>
-                        <td style={{ color: '#f0d878' }}>
-                          {typeof r.rewards === 'string' ? r.rewards : JSON.stringify(r.rewards || {})}
-                        </td>
-                      </tr>
-                    ))}
+                    {signInRewards.map(r => {
+                      const rw = typeof r.rewards === 'string' ? JSON.parse(r.rewards) : r.rewards || {}
+                      return (
+                        <tr key={r.id}>
+                          <td>{r.id}</td>
+                          <td>{r.day_type === 'daily' ? '每日签到' : r.day_type === 'consecutive' ? '连续签到' : '累计签到'}</td>
+                          <td>{r.day_type === 'daily' ? '-' : r.day_number}</td>
+                          <td style={{ color: '#f0d878', fontSize: '0.85rem' }}>
+                            {rw.gold ? `金币+${rw.gold} ` : ''}
+                            {rw.exp ? `经验+${rw.exp} ` : ''}
+                            {rw.items && rw.items.length ? rw.items.map(i => {
+                              const it = itemOptions.find(o => o.value === i.itemId)
+                              return ` ${it ? it.label.split(' ').slice(1).join(' ') : '物品#'+i.itemId}x${i.quantity}`
+                            }).join(' ') : ''}
+                            {!rw.gold && !rw.exp && (!rw.items || !rw.items.length) ? '-' : ''}
+                          </td>
+                          <td>
+                            <button className="btn-primary" style={{ padding: '0.3rem 0.8rem', fontSize: '0.8rem', marginRight: '0.5rem' }} onClick={() => openEditReward(r)}>编辑</button>
+                            <button className="btn-primary" style={{ padding: '0.3rem 0.8rem', fontSize: '0.8rem', background: '#c0392b' }} onClick={() => deleteReward(r.id)}>删除</button>
+                          </td>
+                        </tr>
+                      )
+                    })}
                   </tbody>
                 </table>
               </div>
@@ -820,17 +1388,27 @@ export default function Admin() {
                 <table>
                   <thead><tr>
                     <th>ID</th><th>用户名</th><th>注册时间</th>
-                    <th>角色</th><th>境界</th><th>金币</th>
+                    <th>角色</th><th>境界</th><th>等级</th><th>金币</th>
+                    <th>攻击/防御/速度</th><th>操作</th>
                   </tr></thead>
                   <tbody>
                     {users.map(u => (
                       <tr key={u.id}>
                         <td>{u.id}</td>
-                        <td>{u.username}</td>
-                        <td>{u.created_at}</td>
+                        <td style={{ fontWeight: 700 }}>{u.username}</td>
+                        <td style={{ fontSize: '0.8rem', color: '#888' }}>{u.created_at}</td>
                         <td>{u.character_name || '-'}</td>
                         <td style={{ color: '#7ec8e3' }}>{u.realm || '-'}</td>
-                        <td>{u.gold != null ? u.gold : '-'}</td>
+                        <td>Lv.{u.level || '-'}</td>
+                        <td style={{ color: '#f0d878' }}>{u.gold != null ? u.gold : '-'}</td>
+                        <td style={{ fontSize: '0.85rem', color: '#aaa' }}>
+                          {u.attack != null ? `${u.attack}/${u.defense}/${u.speed}` : '-'}
+                        </td>
+                        <td>
+                          <button className="btn-primary" style={{ padding: '0.3rem 0.6rem', fontSize: '0.75rem', marginRight: '0.3rem' }} onClick={() => openEditUser(u)}>编辑</button>
+                          <button className="btn-primary" style={{ padding: '0.3rem 0.6rem', fontSize: '0.75rem', marginRight: '0.3rem', background: '#2980b9' }} onClick={() => openResetPwd(u.id)}>重置密码</button>
+                          <button className="btn-primary" style={{ padding: '0.3rem 0.6rem', fontSize: '0.75rem', background: '#c0392b' }} onClick={() => deleteUser(u.id, u.username)}>删除</button>
+                        </td>
                       </tr>
                     ))}
                   </tbody>
@@ -843,35 +1421,90 @@ export default function Admin() {
 
       {showItemModal && (
         <div className="modal-overlay" onClick={() => setShowItemModal(false)}>
-          <div className="modal-card" onClick={e => e.stopPropagation()}>
+          <div className="modal-card" onClick={e => e.stopPropagation()} style={{ maxHeight: '90vh', overflowY: 'auto' }}>
             <div className="modal-title">{editingItem ? '编辑物品' : '新增物品'}</div>
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.8rem' }}>
               <div className="form-group"><label>物品名称 *</label><input type="text" value={itemForm.name} onChange={e => setItemForm({ ...itemForm, name: e.target.value })} /></div>
-              <div className="form-group"><label>类型 *</label><input type="text" value={itemForm.type} onChange={e => setItemForm({ ...itemForm, type: e.target.value })} placeholder="consumable/weapon/armor" /></div>
-              <div className="form-group"><label>子类型</label><input type="text" value={itemForm.sub_type} onChange={e => setItemForm({ ...itemForm, sub_type: e.target.value })} placeholder="potion/sword/helmet" /></div>
-              <div className="form-group"><label>品质</label>
-                <select value={itemForm.quality} onChange={e => setItemForm({ ...itemForm, quality: e.target.value })} style={selectStyle}>
-                  <option value="common">普通</option><option value="uncommon">优秀</option>
-                  <option value="rare">稀有</option><option value="epic">史诗</option>
-                  <option value="legendary">传说</option><option value="mythic">神话</option>
+              <div className="form-group"><label>类型 *</label>
+                <select value={itemForm.type} onChange={e => setItemForm({ ...itemForm, type: e.target.value, sub_type: '' })} style={selectStyle}>
+                  <option value="">请选择类型</option>
+                  {ITEM_TYPES.map(t => <option key={t.value} value={t.value}>{t.label}</option>)}
                 </select>
               </div>
-              <div className="form-group"><label>装备部位</label><input type="text" value={itemForm.slot} onChange={e => setItemForm({ ...itemForm, slot: e.target.value })} placeholder="weapon/helmet/armor..." /></div>
-              <div className="form-group"><label>价格</label><input type="number" value={itemForm.price} onChange={e => setItemForm({ ...itemForm, price: e.target.value })} /></div>
+              {itemForm.type && ITEM_SUBTYPES[itemForm.type] && (
+                <div className="form-group"><label>子类型</label>
+                  <select value={itemForm.sub_type} onChange={e => setItemForm({ ...itemForm, sub_type: e.target.value })} style={selectStyle}>
+                    <option value="">请选择子类型</option>
+                    {ITEM_SUBTYPES[itemForm.type].map(t => <option key={t.value} value={t.value}>{t.label}</option>)}
+                  </select>
+                </div>
+              )}
+              {!itemForm.type && <div className="form-group"><label>子类型</label><div style={{ padding: '0.7rem', color: '#666' }}>请先选择类型</div></div>}
+              <div className="form-group"><label>品质</label>
+                <select value={itemForm.quality} onChange={e => setItemForm({ ...itemForm, quality: e.target.value })} style={selectStyle}>
+                  {QUALITIES.map(q => <option key={q.value} value={q.value}>{q.label}</option>)}
+                </select>
+              </div>
+              {itemForm.type === 'equipment' ? (
+                <div className="form-group"><label>装备部位</label>
+                  <select value={itemForm.slot} onChange={e => setItemForm({ ...itemForm, slot: e.target.value })} style={selectStyle}>
+                    <option value="">请选择部位</option>
+                    {EQUIPMENT_SLOTS.map(s => <option key={s.value} value={s.value}>{s.label}</option>)}
+                  </select>
+                </div>
+              ) : (
+                <div className="form-group"><label>装备部位</label><div style={{ padding: '0.7rem', color: '#666' }}>仅装备类型需要</div></div>
+              )}
+              <div className="form-group"><label>价格（金币）</label><input type="number" value={itemForm.price} onChange={e => setItemForm({ ...itemForm, price: e.target.value })} /></div>
             </div>
-            <div className="form-group"><label>描述</label><input type="text" value={itemForm.description} onChange={e => setItemForm({ ...itemForm, description: e.target.value })} /></div>
-            <div className="form-group"><label>效果 (JSON)</label>
-              <textarea value={itemForm.effect_str} onChange={e => setItemForm({ ...itemForm, effect_str: e.target.value })}
-                placeholder='{"heal": 100} 或 {"buff": "attack", "value": 20}'
-                style={textareaStyle}
-              />
-            </div>
-            <div className="form-group"><label>属性 (JSON)</label>
-              <textarea value={itemForm.stats_str} onChange={e => setItemForm({ ...itemForm, stats_str: e.target.value })}
-                placeholder='{"attack": 10, "defense": 5}'
-                style={textareaStyle}
-              />
-            </div>
+            <div className="form-group"><label>物品描述</label><input type="text" value={itemForm.description} onChange={e => setItemForm({ ...itemForm, description: e.target.value })} /></div>
+
+            {itemForm.type === 'consumable' && (
+              <div style={{ margin: '1rem 0', padding: '1rem', background: 'rgba(10,10,26,0.5)', borderRadius: 8, border: '1px solid rgba(126,200,227,0.2)' }}>
+                <div className="section-title" style={{ marginBottom: '0.8rem', fontSize: '1rem' }}>🧪 使用效果配置</div>
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.8rem' }}>
+                  <div className="form-group"><label>效果类型</label>
+                    <select value={itemForm.effectType} onChange={e => setItemForm({ ...itemForm, effectType: e.target.value })} style={selectStyle}>
+                      <option value="">无效果</option>
+                      {EFFECT_TYPES.map(e => <option key={e.value} value={e.value}>{e.label}</option>)}
+                    </select>
+                  </div>
+                  <div className="form-group"><label>效果数值</label>
+                    <input type="number" value={itemForm.effectValue} onChange={e => setItemForm({ ...itemForm, effectValue: e.target.value })} disabled={!itemForm.effectType} />
+                  </div>
+                </div>
+                {itemForm.effectType === 'tribulation_bonus' && (
+                  <div className="form-group" style={{ marginTop: '0.5rem' }}>
+                    <label style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                      <input type="checkbox" checked={!!itemForm.effectSaveOnFail} onChange={e => setItemForm({ ...itemForm, effectSaveOnFail: e.target.checked })} />
+                      渡劫失败时保不死
+                    </label>
+                  </div>
+                )}
+              </div>
+            )}
+
+            {(itemForm.type === 'equipment' || itemForm.stats.length > 0) && (
+              <div style={{ margin: '1rem 0', padding: '1rem', background: 'rgba(10,10,26,0.5)', borderRadius: 8, border: '1px solid rgba(126,200,227,0.2)' }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.8rem' }}>
+                  <div className="section-title" style={{ marginBottom: 0, fontSize: '1rem' }}>⚔️ 属性加成配置</div>
+                  <button className="btn-primary" style={{ padding: '0.3rem 0.8rem', fontSize: '0.8rem' }} onClick={addItemStat}>+ 添加属性</button>
+                </div>
+                {itemForm.stats.length === 0 && (
+                  <div style={{ color: '#666', fontStyle: 'italic', padding: '0.5rem' }}>暂无属性加成</div>
+                )}
+                {itemForm.stats.map((stat, idx) => (
+                  <div key={idx} style={{ display: 'flex', gap: '0.5rem', alignItems: 'center', marginBottom: '0.5rem' }}>
+                    <select value={stat.stat} onChange={e => updateItemStat(idx, 'stat', e.target.value)} style={{ ...selectStyle, flex: 1 }}>
+                      {STAT_FIELDS.map(s => <option key={s.value} value={s.value}>{s.label}</option>)}
+                    </select>
+                    <input type="number" placeholder="数值" value={stat.value} onChange={e => updateItemStat(idx, 'value', e.target.value)} style={{ width: '100px', padding: '0.5rem', background: 'rgba(10,10,26,0.8)', color: '#e0e0e0', border: '1px solid rgba(126,200,227,0.3)', borderRadius: 6 }} />
+                    <button onClick={() => removeItemStat(idx)} style={{ padding: '0.5rem 0.8rem', background: '#c0392b', color: '#fff', border: 'none', borderRadius: 6, cursor: 'pointer' }}>删除</button>
+                  </div>
+                ))}
+              </div>
+            )}
+
             <div className="modal-actions">
               <button className="btn-primary" onClick={() => setShowItemModal(false)}>取消</button>
               <button className="btn-primary" onClick={saveItem}>保存</button>
@@ -915,21 +1548,21 @@ export default function Admin() {
             <div style={{ marginBottom: '0.8rem' }}>
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.5rem' }}>
                 <span style={{ color: '#d4af37', fontSize: '0.9rem' }}>道具奖励</span>
-                <button className="btn-primary" style={{ padding: '0.3rem 0.8rem', fontSize: '0.8rem' }} onClick={addRewardItem}>+ 添加道具</button>
+                <button className="btn-primary" style={{ padding: '0.3rem 0.8rem', fontSize: '0.8rem' }} onClick={achAddRewardItem}>+ 添加道具</button>
               </div>
               {achForm.rewardItems && achForm.rewardItems.length > 0 ? (
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
                   {achForm.rewardItems.map((item, idx) => (
                     <div key={idx} style={{ display: 'flex', gap: '0.5rem', alignItems: 'center' }}>
                       <input type="text" placeholder="物品ID" value={item.itemId}
-                        onChange={e => updateRewardItem(idx, 'itemId', e.target.value)}
+                        onChange={e => achUpdateRewardItem(idx, 'itemId', e.target.value)}
                         style={{ flex: 1, padding: '0.5rem', background: 'rgba(10,10,26,0.8)', color: '#e0e0e0', border: '1px solid rgba(126,200,227,0.3)', borderRadius: 6 }}
                       />
                       <input type="number" placeholder="数量" value={item.quantity}
-                        onChange={e => updateRewardItem(idx, 'quantity', e.target.value)}
+                        onChange={e => achUpdateRewardItem(idx, 'quantity', e.target.value)}
                         style={{ width: '80px', padding: '0.5rem', background: 'rgba(10,10,26,0.8)', color: '#e0e0e0', border: '1px solid rgba(126,200,227,0.3)', borderRadius: 6 }}
                       />
-                      <button onClick={() => removeRewardItem(idx)}
+                      <button onClick={() => achRemoveRewardItem(idx)}
                         style={{ padding: '0.5rem 0.8rem', background: '#c0392b', color: '#fff', border: 'none', borderRadius: 6, cursor: 'pointer' }}
                       >删除</button>
                     </div>
@@ -950,42 +1583,91 @@ export default function Admin() {
 
       {showSkillModal && (
         <div className="modal-overlay" onClick={() => setShowSkillModal(false)}>
-          <div className="modal-card" onClick={e => e.stopPropagation()}>
+          <div className="modal-card" onClick={e => e.stopPropagation()} style={{ maxHeight: '90vh', overflowY: 'auto' }}>
             <div className="modal-title">{editingSkill ? '编辑技能' : '新增技能'}</div>
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.8rem' }}>
               <div className="form-group"><label>技能名称 *</label><input type="text" value={skillForm.name} onChange={e => setSkillForm({ ...skillForm, name: e.target.value })} /></div>
-              <div className="form-group"><label>图标</label><input type="text" value={skillForm.icon} onChange={e => setSkillForm({ ...skillForm, icon: e.target.value })} /></div>
-              <div className="form-group"><label>类型</label>
+              <div className="form-group"><label>图标（emoji）</label><input type="text" value={skillForm.icon} onChange={e => setSkillForm({ ...skillForm, icon: e.target.value })} /></div>
+              <div className="form-group"><label>技能类型</label>
                 <select value={skillForm.type} onChange={e => setSkillForm({ ...skillForm, type: e.target.value })} style={selectStyle}>
                   <option value="active">主动技能</option>
                   <option value="passive">被动技能</option>
                 </select>
               </div>
-              <div className="form-group"><label>子类型</label>
+              <div className="form-group"><label>技能效果分类</label>
                 <select value={skillForm.subtype} onChange={e => setSkillForm({ ...skillForm, subtype: e.target.value })} style={selectStyle}>
-                  <option value="damage">伤害</option>
-                  <option value="damage_crit">暴击伤害</option>
-                  <option value="damage_heal">伤害+吸血</option>
-                  <option value="heal">治疗</option>
-                  <option value="buff">增益</option>
+                  {SKILL_SUBTYPES.map(s => <option key={s.value} value={s.value}>{s.label}</option>)}
                 </select>
               </div>
-              <div className="form-group"><label>等级要求</label><input type="number" value={skillForm.level_req} onChange={e => setSkillForm({ ...skillForm, level_req: e.target.value })} /></div>
-              <div className="form-group"><label>境界要求(序号)</label><input type="number" value={skillForm.realm_req} onChange={e => setSkillForm({ ...skillForm, realm_req: e.target.value })} /></div>
-              <div className="form-group"><label>灵力消耗</label><input type="number" value={skillForm.mp_cost} onChange={e => setSkillForm({ ...skillForm, mp_cost: e.target.value })} /></div>
+              <div className="form-group"><label>等级要求</label><input type="number" value={skillForm.levelReq} onChange={e => setSkillForm({ ...skillForm, levelReq: e.target.value })} /></div>
+              <div className="form-group"><label>境界要求</label>
+                <select value={skillForm.realmReq} onChange={e => setSkillForm({ ...skillForm, realmReq: e.target.value })} style={selectStyle}>
+                  {REALM_OPTIONS.map(r => <option key={r.value} value={r.value}>{r.label}</option>)}
+                </select>
+              </div>
+              <div className="form-group"><label>灵力消耗</label><input type="number" value={skillForm.mpCost} onChange={e => setSkillForm({ ...skillForm, mpCost: e.target.value })} /></div>
               <div className="form-group"><label>冷却回合</label><input type="number" value={skillForm.cooldown} onChange={e => setSkillForm({ ...skillForm, cooldown: e.target.value })} /></div>
-              <div className="form-group"><label>基础威力</label><input type="number" value={skillForm.base_power} onChange={e => setSkillForm({ ...skillForm, base_power: e.target.value })} /></div>
-              <div className="form-group"><label>每级熟练度需求</label><input type="number" value={skillForm.proficiency_per_level} onChange={e => setSkillForm({ ...skillForm, proficiency_per_level: e.target.value })} /></div>
-              <div className="form-group"><label>最大等级</label><input type="number" value={skillForm.max_level} onChange={e => setSkillForm({ ...skillForm, max_level: e.target.value })} /></div>
-              <div className="form-group"><label>排序</label><input type="number" value={skillForm.sort_order} onChange={e => setSkillForm({ ...skillForm, sort_order: e.target.value })} /></div>
+              <div className="form-group"><label>基础威力</label><input type="number" value={skillForm.basePower} onChange={e => setSkillForm({ ...skillForm, basePower: e.target.value })} /></div>
+              <div className="form-group"><label>每级熟练度需求</label><input type="number" value={skillForm.proficiencyPerLevel} onChange={e => setSkillForm({ ...skillForm, proficiencyPerLevel: e.target.value })} /></div>
+              <div className="form-group"><label>最大等级</label><input type="number" value={skillForm.maxLevel} onChange={e => setSkillForm({ ...skillForm, maxLevel: e.target.value })} /></div>
+              <div className="form-group"><label>排序（越小越靠前）</label><input type="number" value={skillForm.sortOrder} onChange={e => setSkillForm({ ...skillForm, sortOrder: e.target.value })} /></div>
             </div>
-            <div className="form-group"><label>描述</label><input type="text" value={skillForm.description} onChange={e => setSkillForm({ ...skillForm, description: e.target.value })} /></div>
-            <div className="form-group"><label>效果 (JSON) 例: {"{\"type\":\"damage\",\"value\":100}"}</label>
-              <textarea value={skillForm.effect_str} onChange={e => setSkillForm({ ...skillForm, effect_str: e.target.value })} style={textareaStyle} />
+            <div className="form-group"><label>技能描述</label><input type="text" value={skillForm.description} onChange={e => setSkillForm({ ...skillForm, description: e.target.value })} /></div>
+
+            <div style={{ margin: '1rem 0', padding: '1rem', background: 'rgba(10,10,26,0.5)', borderRadius: 8, border: '1px solid rgba(126,200,227,0.2)' }}>
+              <div className="section-title" style={{ marginBottom: '0.8rem', fontSize: '1rem' }}>⚡ 技能效果配置</div>
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.8rem' }}>
+                <div className="form-group"><label>效果类型</label>
+                  <select value={skillForm.effectType} onChange={e => setSkillForm({ ...skillForm, effectType: e.target.value })} style={selectStyle}>
+                    <option value="">无（仅基础威力）</option>
+                    <option value="damage">普通伤害</option>
+                    <option value="damage_crit">暴击伤害</option>
+                    <option value="damage_heal">伤害+吸血</option>
+                    <option value="damage_aoe">范围伤害</option>
+                    <option value="heal">治疗</option>
+                    <option value="heal_group">群体治疗</option>
+                    <option value="buff">增益效果</option>
+                    <option value="debuff">减益效果</option>
+                    <option value="shield">护盾</option>
+                    <option value="passive">被动属性加成</option>
+                  </select>
+                </div>
+                <div className="form-group"><label>效果固定数值</label><input type="number" value={skillForm.effectValue} onChange={e => setSkillForm({ ...skillForm, effectValue: e.target.value })} /></div>
+                <div className="form-group"><label>伤害倍率（x1.0 = 100%）</label><input type="number" step="0.1" value={skillForm.effectMultiplier} onChange={e => setSkillForm({ ...skillForm, effectMultiplier: e.target.value })} /></div>
+                {(skillForm.effectType === 'damage_crit') && (
+                  <>
+                    <div className="form-group"><label>暴击触发几率（0-1）</label><input type="number" step="0.05" value={skillForm.effectCritChance} onChange={e => setSkillForm({ ...skillForm, effectCritChance: e.target.value })} /></div>
+                    <div className="form-group"><label>暴击伤害倍率（x1.5 = 150%）</label><input type="number" step="0.1" value={skillForm.effectCritMultiplier} onChange={e => setSkillForm({ ...skillForm, effectCritMultiplier: e.target.value })} /></div>
+                  </>
+                )}
+                {(skillForm.effectType === 'damage_heal') && (
+                  <div className="form-group"><label>吸血百分比（0-1）</label><input type="number" step="0.05" value={skillForm.effectHealPercent} onChange={e => setSkillForm({ ...skillForm, effectHealPercent: e.target.value })} /></div>
+                )}
+                {(skillForm.effectType === 'passive' || skillForm.effectType === 'buff' || skillForm.effectType === 'debuff') && (
+                  <>
+                    <div className="form-group"><label>影响属性</label>
+                      <select value={skillForm.effectStat} onChange={e => setSkillForm({ ...skillForm, effectStat: e.target.value })} style={selectStyle}>
+                        <option value="">请选择</option>
+                        {STAT_FIELDS.map(s => <option key={s.value} value={s.value}>{s.label}</option>)}
+                      </select>
+                    </div>
+                    <div className="form-group"><label>属性数值</label><input type="number" value={skillForm.effectStatValue} onChange={e => setSkillForm({ ...skillForm, effectStatValue: e.target.value })} /></div>
+                  </>
+                )}
+              </div>
             </div>
-            <div className="form-group"><label>成长 (JSON) 每级增加的属性</label>
-              <textarea value={skillForm.growth_str} onChange={e => setSkillForm({ ...skillForm, growth_str: e.target.value })} style={textareaStyle} />
+
+            <div style={{ margin: '1rem 0', padding: '1rem', background: 'rgba(10,10,26,0.5)', borderRadius: 8, border: '1px solid rgba(126,200,227,0.2)' }}>
+              <div className="section-title" style={{ marginBottom: '0.8rem', fontSize: '1rem' }}>📈 每级成长配置</div>
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.8rem' }}>
+                <div className="form-group"><label>威力增加/级</label><input type="number" value={skillForm.growthPower} onChange={e => setSkillForm({ ...skillForm, growthPower: e.target.value })} /></div>
+                <div className="form-group"><label>数值增加/级（治疗/伤害等）</label><input type="number" value={skillForm.growthValue} onChange={e => setSkillForm({ ...skillForm, growthValue: e.target.value })} /></div>
+                <div className="form-group"><label>吸血%增加/级</label><input type="number" step="0.01" value={skillForm.growthHeal} onChange={e => setSkillForm({ ...skillForm, growthHeal: e.target.value })} /></div>
+                <div className="form-group"><label>被动属性增加/级</label><input type="number" value={skillForm.growthStat} onChange={e => setSkillForm({ ...skillForm, growthStat: e.target.value })} /></div>
+                <div className="form-group"><label>暴击率%增加/级</label><input type="number" step="0.01" value={skillForm.growthCritChance} onChange={e => setSkillForm({ ...skillForm, growthCritChance: e.target.value })} /></div>
+              </div>
             </div>
+
             <div className="modal-actions">
               <button className="btn-primary" onClick={() => setShowSkillModal(false)}>取消</button>
               <button className="btn-primary" onClick={saveSkill}>保存</button>
@@ -996,26 +1678,97 @@ export default function Admin() {
 
       {showDungeonModal && (
         <div className="modal-overlay" onClick={() => setShowDungeonModal(false)}>
-          <div className="modal-card" onClick={e => e.stopPropagation()}>
+          <div className="modal-card" onClick={e => e.stopPropagation()} style={{ maxHeight: '90vh', overflowY: 'auto' }}>
             <div className="modal-title">{editingDungeon ? '编辑副本' : '新增副本'}</div>
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.8rem' }}>
               <div className="form-group"><label>副本名称 *</label><input type="text" value={dungeonForm.name} onChange={e => setDungeonForm({ ...dungeonForm, name: e.target.value })} /></div>
-              <div className="form-group"><label>图标</label><input type="text" value={dungeonForm.icon} onChange={e => setDungeonForm({ ...dungeonForm, icon: e.target.value })} /></div>
-              <div className="form-group"><label>等级要求</label><input type="number" value={dungeonForm.level_req} onChange={e => setDungeonForm({ ...dungeonForm, level_req: e.target.value })} /></div>
-              <div className="form-group"><label>境界要求</label><input type="number" value={dungeonForm.realm_req} onChange={e => setDungeonForm({ ...dungeonForm, realm_req: e.target.value })} /></div>
-              <div className="form-group"><label>每日挑战次数</label><input type="number" value={dungeonForm.daily_limit} onChange={e => setDungeonForm({ ...dungeonForm, daily_limit: e.target.value })} /></div>
-              <div className="form-group"><label>排序</label><input type="number" value={dungeonForm.sort_order} onChange={e => setDungeonForm({ ...dungeonForm, sort_order: e.target.value })} /></div>
+              <div className="form-group"><label>图标（emoji）</label><input type="text" value={dungeonForm.icon} onChange={e => setDungeonForm({ ...dungeonForm, icon: e.target.value })} /></div>
+              <div className="form-group"><label>等级要求</label><input type="number" value={dungeonForm.levelReq} onChange={e => setDungeonForm({ ...dungeonForm, levelReq: e.target.value })} /></div>
+              <div className="form-group"><label>境界要求</label>
+                <select value={dungeonForm.realmReq} onChange={e => setDungeonForm({ ...dungeonForm, realmReq: e.target.value })} style={selectStyle}>
+                  {REALM_OPTIONS.map(r => <option key={r.value} value={r.value}>{r.label}</option>)}
+                </select>
+              </div>
+              <div className="form-group"><label>每日挑战次数</label><input type="number" value={dungeonForm.dailyLimit} onChange={e => setDungeonForm({ ...dungeonForm, dailyLimit: e.target.value })} /></div>
+              <div className="form-group"><label>排序（越小越靠前）</label><input type="number" value={dungeonForm.sortOrder} onChange={e => setDungeonForm({ ...dungeonForm, sortOrder: e.target.value })} /></div>
             </div>
-            <div className="form-group"><label>描述</label><input type="text" value={dungeonForm.description} onChange={e => setDungeonForm({ ...dungeonForm, description: e.target.value })} /></div>
-            <div className="form-group"><label>怪物波次 (JSON 二维数组) 例: [[1,2],[3,4]] 每子数组为一波的怪物ID</label>
-              <textarea value={dungeonForm.monsters_str} onChange={e => setDungeonForm({ ...dungeonForm, monsters_str: e.target.value })} style={textareaStyle} />
+            <div className="form-group"><label>副本描述</label><input type="text" value={dungeonForm.description} onChange={e => setDungeonForm({ ...dungeonForm, description: e.target.value })} /></div>
+
+            <div style={{ margin: '1rem 0', padding: '1rem', background: 'rgba(10,10,26,0.5)', borderRadius: 8, border: '1px solid rgba(126,200,227,0.2)' }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.8rem' }}>
+                <div className="section-title" style={{ marginBottom: 0, fontSize: '1rem' }}>👹 怪物波次配置</div>
+                <button className="btn-primary" style={{ padding: '0.3rem 0.8rem', fontSize: '0.8rem' }} onClick={addWave}>+ 添加波次</button>
+              </div>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+                {dungeonForm.waves.map((wave, wi) => (
+                  <div key={wi} style={{ padding: '0.8rem', background: 'rgba(0,0,0,0.3)', borderRadius: 6 }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.5rem' }}>
+                      <span style={{ fontWeight: 700, color: '#e67e22' }}>第 {wi + 1} 波（共 {wave.length} 只怪物）</span>
+                      <button onClick={() => removeWave(wi)} style={{ padding: '0.2rem 0.6rem', background: '#c0392b', color: '#fff', border: 'none', borderRadius: 4, cursor: 'pointer', fontSize: '0.75rem' }}>删除波次</button>
+                    </div>
+                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '0.3rem' }}>
+                      {MONSTER_OPTIONS.map(m => (
+                        <label key={m.value} style={{ display: 'flex', alignItems: 'center', gap: '0.3rem', fontSize: '0.8rem', padding: '0.3rem', background: wave.includes(m.value) ? 'rgba(230,126,34,0.2)' : 'transparent', borderRadius: 4, cursor: 'pointer' }}>
+                          <input type="checkbox" checked={wave.includes(m.value)} onChange={() => toggleMonsterInWave(wi, m.value)} />
+                          {m.label}
+                        </label>
+                      ))}
+                    </div>
+                  </div>
+                ))}
+              </div>
             </div>
-            <div className="form-group"><label>首通奖励 (JSON) 例: {"{\"gold\":1000,\"exp\":500}"}</label>
-              <textarea value={dungeonForm.first_clear_rewards_str} onChange={e => setDungeonForm({ ...dungeonForm, first_clear_rewards_str: e.target.value })} style={textareaStyle} />
+
+            <div style={{ margin: '1rem 0', padding: '1rem', background: 'rgba(10,10,26,0.5)', borderRadius: 8, border: '1px solid rgba(126,200,227,0.2)' }}>
+              <div className="section-title" style={{ marginBottom: '0.8rem', fontSize: '1rem' }}>🏆 首次通关奖励</div>
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.8rem' }}>
+                <div className="form-group"><label>金币奖励</label><input type="number" value={dungeonForm.firstClearGold} onChange={e => setDungeonForm({ ...dungeonForm, firstClearGold: e.target.value })} /></div>
+                <div className="form-group"><label>经验奖励</label><input type="number" value={dungeonForm.firstClearExp} onChange={e => setDungeonForm({ ...dungeonForm, firstClearExp: e.target.value })} /></div>
+              </div>
+              <div style={{ marginTop: '0.5rem' }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.5rem' }}>
+                  <span style={{ color: '#d4af37', fontSize: '0.9rem' }}>道具奖励</span>
+                  <button className="btn-primary" style={{ padding: '0.25rem 0.6rem', fontSize: '0.75rem' }} onClick={() => addRewardItem('firstClearItems', 'firstClearItems')}>+ 添加道具</button>
+                </div>
+                {dungeonForm.firstClearItems.length === 0 && <div style={{ color: '#666', fontStyle: 'italic', fontSize: '0.85rem' }}>暂无道具奖励</div>}
+                {dungeonForm.firstClearItems.map((item, idx) => (
+                  <div key={idx} style={{ display: 'flex', gap: '0.5rem', alignItems: 'center', marginBottom: '0.3rem' }}>
+                    <select value={item.itemId} onChange={e => updateRewardItem('firstClearItems', idx, 'itemId', e.target.value)} style={selectStyle}>
+                      <option value="">选择物品</option>
+                      {itemOptions.map(o => <option key={o.value} value={o.value}>{o.label}</option>)}
+                    </select>
+                    <input type="number" placeholder="数量" value={item.quantity} onChange={e => updateRewardItem('firstClearItems', idx, 'quantity', e.target.value)} style={{ width: '80px', padding: '0.5rem', background: 'rgba(10,10,26,0.8)', color: '#e0e0e0', border: '1px solid rgba(126,200,227,0.3)', borderRadius: 6 }} />
+                    <button onClick={() => removeRewardItem('firstClearItems', idx)} style={{ padding: '0.5rem 0.8rem', background: '#c0392b', color: '#fff', border: 'none', borderRadius: 6, cursor: 'pointer' }}>删除</button>
+                  </div>
+                ))}
+              </div>
             </div>
-            <div className="form-group"><label>普通通关奖励 (JSON)</label>
-              <textarea value={dungeonForm.clear_rewards_str} onChange={e => setDungeonForm({ ...dungeonForm, clear_rewards_str: e.target.value })} style={textareaStyle} />
+
+            <div style={{ margin: '1rem 0', padding: '1rem', background: 'rgba(10,10,26,0.5)', borderRadius: 8, border: '1px solid rgba(126,200,227,0.2)' }}>
+              <div className="section-title" style={{ marginBottom: '0.8rem', fontSize: '1rem' }}>🎁 普通通关奖励</div>
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.8rem' }}>
+                <div className="form-group"><label>金币奖励</label><input type="number" value={dungeonForm.clearGold} onChange={e => setDungeonForm({ ...dungeonForm, clearGold: e.target.value })} /></div>
+                <div className="form-group"><label>经验奖励</label><input type="number" value={dungeonForm.clearExp} onChange={e => setDungeonForm({ ...dungeonForm, clearExp: e.target.value })} /></div>
+              </div>
+              <div style={{ marginTop: '0.5rem' }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.5rem' }}>
+                  <span style={{ color: '#d4af37', fontSize: '0.9rem' }}>道具奖励</span>
+                  <button className="btn-primary" style={{ padding: '0.25rem 0.6rem', fontSize: '0.75rem' }} onClick={() => addRewardItem('clearItems', 'clearItems')}>+ 添加道具</button>
+                </div>
+                {dungeonForm.clearItems.length === 0 && <div style={{ color: '#666', fontStyle: 'italic', fontSize: '0.85rem' }}>暂无道具奖励</div>}
+                {dungeonForm.clearItems.map((item, idx) => (
+                  <div key={idx} style={{ display: 'flex', gap: '0.5rem', alignItems: 'center', marginBottom: '0.3rem' }}>
+                    <select value={item.itemId} onChange={e => updateRewardItem('clearItems', idx, 'itemId', e.target.value)} style={selectStyle}>
+                      <option value="">选择物品</option>
+                      {itemOptions.map(o => <option key={o.value} value={o.value}>{o.label}</option>)}
+                    </select>
+                    <input type="number" placeholder="数量" value={item.quantity} onChange={e => updateRewardItem('clearItems', idx, 'quantity', e.target.value)} style={{ width: '80px', padding: '0.5rem', background: 'rgba(10,10,26,0.8)', color: '#e0e0e0', border: '1px solid rgba(126,200,227,0.3)', borderRadius: 6 }} />
+                    <button onClick={() => removeRewardItem('clearItems', idx)} style={{ padding: '0.5rem 0.8rem', background: '#c0392b', color: '#fff', border: 'none', borderRadius: 6, cursor: 'pointer' }}>删除</button>
+                  </div>
+                ))}
+              </div>
             </div>
+
             <div className="modal-actions">
               <button className="btn-primary" onClick={() => setShowDungeonModal(false)}>取消</button>
               <button className="btn-primary" onClick={saveDungeon}>保存</button>
@@ -1026,35 +1779,150 @@ export default function Admin() {
 
       {showTitleModal && (
         <div className="modal-overlay" onClick={() => setShowTitleModal(false)}>
-          <div className="modal-card" onClick={e => e.stopPropagation()}>
+          <div className="modal-card" onClick={e => e.stopPropagation()} style={{ maxHeight: '90vh', overflowY: 'auto' }}>
             <div className="modal-title">{editingTitle ? '编辑称号' : '新增称号'}</div>
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.8rem' }}>
               <div className="form-group"><label>称号名称 *</label><input type="text" value={titleForm.name} onChange={e => setTitleForm({ ...titleForm, name: e.target.value })} /></div>
-              <div className="form-group"><label>图标</label><input type="text" value={titleForm.icon} onChange={e => setTitleForm({ ...titleForm, icon: e.target.value })} /></div>
+              <div className="form-group"><label>图标（emoji）</label><input type="text" value={titleForm.icon} onChange={e => setTitleForm({ ...titleForm, icon: e.target.value })} /></div>
               <div className="form-group"><label>来源</label>
                 <select value={titleForm.source} onChange={e => setTitleForm({ ...titleForm, source: e.target.value })} style={selectStyle}>
-                  <option value="achievement">成就</option>
-                  <option value="event">活动</option>
-                  <option value="manual">手动</option>
+                  {TITLE_SOURCES.map(s => <option key={s.value} value={s.value}>{s.label}</option>)}
                 </select>
               </div>
-              <div className="form-group"><label>来源ID</label><input type="number" value={titleForm.source_id} onChange={e => setTitleForm({ ...titleForm, source_id: e.target.value })} /></div>
+              <div className="form-group"><label>来源ID（可选）</label><input type="number" value={titleForm.sourceId} onChange={e => setTitleForm({ ...titleForm, sourceId: e.target.value })} /></div>
               <div className="form-group"><label>品质</label>
                 <select value={titleForm.quality} onChange={e => setTitleForm({ ...titleForm, quality: e.target.value })} style={selectStyle}>
-                  <option value="common">普通</option><option value="uncommon">优秀</option>
-                  <option value="rare">稀有</option><option value="epic">史诗</option>
-                  <option value="legendary">传说</option><option value="mythic">神话</option>
+                  {QUALITIES.map(q => <option key={q.value} value={q.value}>{q.label}</option>)}
                 </select>
               </div>
-              <div className="form-group"><label>排序</label><input type="number" value={titleForm.sort_order} onChange={e => setTitleForm({ ...titleForm, sort_order: e.target.value })} /></div>
+              <div className="form-group"><label>排序（越小越靠前）</label><input type="number" value={titleForm.sortOrder} onChange={e => setTitleForm({ ...titleForm, sortOrder: e.target.value })} /></div>
             </div>
             <div className="form-group"><label>描述</label><input type="text" value={titleForm.description} onChange={e => setTitleForm({ ...titleForm, description: e.target.value })} /></div>
-            <div className="form-group"><label>属性加成 (JSON) 例: {"{\"attack\":10,\"defense\":5,\"max_hp\":100}"}</label>
-              <textarea value={titleForm.stats_str} onChange={e => setTitleForm({ ...titleForm, stats_str: e.target.value })} style={textareaStyle} />
+
+            <div style={{ margin: '1rem 0', padding: '1rem', background: 'rgba(10,10,26,0.5)', borderRadius: 8, border: '1px solid rgba(126,200,227,0.2)' }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.8rem' }}>
+                <div className="section-title" style={{ marginBottom: 0, fontSize: '1rem' }}>⭐ 属性加成配置</div>
+                <button className="btn-primary" style={{ padding: '0.3rem 0.8rem', fontSize: '0.8rem' }} onClick={addTitleStat}>+ 添加属性</button>
+              </div>
+              {titleForm.stats.length === 0 && (
+                <div style={{ color: '#666', fontStyle: 'italic', padding: '0.5rem' }}>暂无属性加成</div>
+              )}
+              {titleForm.stats.map((stat, idx) => (
+                <div key={idx} style={{ display: 'flex', gap: '0.5rem', alignItems: 'center', marginBottom: '0.5rem' }}>
+                  <select value={stat.stat} onChange={e => updateTitleStat(idx, 'stat', e.target.value)} style={{ ...selectStyle, flex: 1 }}>
+                    {STAT_FIELDS.map(s => <option key={s.value} value={s.value}>{s.label}</option>)}
+                  </select>
+                  <input type="number" placeholder="数值" value={stat.value} onChange={e => updateTitleStat(idx, 'value', e.target.value)} style={{ width: '100px', padding: '0.5rem', background: 'rgba(10,10,26,0.8)', color: '#e0e0e0', border: '1px solid rgba(126,200,227,0.3)', borderRadius: 6 }} />
+                  <button onClick={() => removeTitleStat(idx)} style={{ padding: '0.5rem 0.8rem', background: '#c0392b', color: '#fff', border: 'none', borderRadius: 6, cursor: 'pointer' }}>删除</button>
+                </div>
+              ))}
             </div>
+
             <div className="modal-actions">
               <button className="btn-primary" onClick={() => setShowTitleModal(false)}>取消</button>
               <button className="btn-primary" onClick={saveTitle}>保存</button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {showRewardModal && (
+        <div className="modal-overlay" onClick={() => setShowRewardModal(false)}>
+          <div className="modal-card" onClick={e => e.stopPropagation()} style={{ maxHeight: '90vh', overflowY: 'auto' }}>
+            <div className="modal-title">{editingReward ? '编辑签到奖励' : '新增签到奖励'}</div>
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.8rem' }}>
+              <div className="form-group"><label>签到类型</label>
+                <select value={rewardForm.dayType} onChange={e => setRewardForm({ ...rewardForm, dayType: e.target.value })} style={selectStyle}>
+                  {DAY_TYPE_OPTIONS.map(t => <option key={t.value} value={t.value}>{t.label}</option>)}
+                </select>
+              </div>
+              {rewardForm.dayType !== 'daily' && (
+                <div className="form-group"><label>第几天 *</label><input type="number" value={rewardForm.dayNumber} onChange={e => setRewardForm({ ...rewardForm, dayNumber: e.target.value })} /></div>
+              )}
+              <div className="form-group"><label>排序</label><input type="number" value={rewardForm.sortOrder} onChange={e => setRewardForm({ ...rewardForm, sortOrder: e.target.value })} /></div>
+              <div className="form-group"><label>金币奖励</label><input type="number" value={rewardForm.gold} onChange={e => setRewardForm({ ...rewardForm, gold: e.target.value })} /></div>
+              <div className="form-group"><label>经验奖励</label><input type="number" value={rewardForm.exp} onChange={e => setRewardForm({ ...rewardForm, exp: e.target.value })} /></div>
+            </div>
+
+            <div style={{ margin: '1rem 0', padding: '1rem', background: 'rgba(10,10,26,0.5)', borderRadius: 8, border: '1px solid rgba(126,200,227,0.2)' }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.8rem' }}>
+                <div className="section-title" style={{ marginBottom: 0, fontSize: '1rem' }}>🎁 物品奖励</div>
+                <button className="btn-primary" style={{ padding: '0.3rem 0.8rem', fontSize: '0.8rem' }} onClick={addRewardSigItem}>+ 添加物品</button>
+              </div>
+              {rewardForm.items.length === 0 && (
+                <div style={{ color: '#666', fontStyle: 'italic', padding: '0.5rem' }}>暂无物品奖励</div>
+              )}
+              {rewardForm.items.map((item, idx) => (
+                <div key={idx} style={{ display: 'flex', gap: '0.5rem', alignItems: 'center', marginBottom: '0.5rem' }}>
+                  <select value={item.itemId} onChange={e => updateRewardSigItem(idx, 'itemId', e.target.value)} style={{ ...selectStyle, flex: 1 }}>
+                    <option value="">请选择物品</option>
+                    {itemOptions.map(o => <option key={o.value} value={o.value}>{o.label}</option>)}
+                  </select>
+                  <input type="number" placeholder="数量" value={item.quantity} onChange={e => updateRewardSigItem(idx, 'quantity', e.target.value)} style={{ width: '100px', padding: '0.5rem', background: 'rgba(10,10,26,0.8)', color: '#e0e0e0', border: '1px solid rgba(126,200,227,0.3)', borderRadius: 6 }} />
+                  <button onClick={() => removeRewardSigItem(idx)} style={{ padding: '0.5rem 0.8rem', background: '#c0392b', color: '#fff', border: 'none', borderRadius: 6, cursor: 'pointer' }}>删除</button>
+                </div>
+              ))}
+            </div>
+
+            <div className="modal-actions">
+              <button className="btn-primary" onClick={() => setShowRewardModal(false)}>取消</button>
+              <button className="btn-primary" onClick={saveReward}>保存</button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {showUserModal && (
+        <div className="modal-overlay" onClick={() => setShowUserModal(false)}>
+          <div className="modal-card" onClick={e => e.stopPropagation()} style={{ maxHeight: '90vh', overflowY: 'auto' }}>
+            <div className="modal-title">{`编辑用户：${editingUser?.username || ''}（角色：${editingUser?.charName || ''}）`}</div>
+            <div style={{ padding: '0.8rem', marginBottom: '0.8rem', background: 'rgba(10,10,26,0.5)', borderRadius: 6 }}>
+              <div style={{ color: '#7ec8e3', fontSize: '0.9rem', marginBottom: '0.3rem' }}>用户 ID：{editingUser?.id || ''}</div>
+              <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                <span>用户名：<b style={{ color: '#fff' }}>{editingUser?.username || ''}</b></span>
+                <span>角色名：<b style={{ color: '#fff' }}>{editingUser?.charName || ''}</b></span>
+              </div>
+            </div>
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.8rem' }}>
+              <div className="form-group"><label>境界</label>
+                <select value={userForm.realm} onChange={e => setUserForm({ ...userForm, realm: e.target.value })} style={selectStyle}>
+                  {REALM_OPTIONS.map(r => <option key={r.value} value={r.value}>{r.label}</option>)}
+                </select>
+              </div>
+              <div className="form-group"><label>等级</label><input type="number" value={userForm.level} onChange={e => setUserForm({ ...userForm, level: e.target.value })} /></div>
+              <div className="form-group"><label>金币</label><input type="number" value={userForm.gold} onChange={e => setUserForm({ ...userForm, gold: e.target.value })} /></div>
+              <div className="form-group"><label>经验</label><input type="number" value={userForm.exp} onChange={e => setUserForm({ ...userForm, exp: e.target.value })} /></div>
+              <div className="form-group"><label>攻击</label><input type="number" value={userForm.attack} onChange={e => setUserForm({ ...userForm, attack: e.target.value })} /></div>
+              <div className="form-group"><label>防御</label><input type="number" value={userForm.defense} onChange={e => setUserForm({ ...userForm, defense: e.target.value })} /></div>
+              <div className="form-group"><label>速度</label><input type="number" value={userForm.speed} onChange={e => setUserForm({ ...userForm, speed: e.target.value })} /></div>
+              <div className="form-group"><label>最大气血</label><input type="number" value={userForm.maxHp} onChange={e => setUserForm({ ...userForm, maxHp: e.target.value })} /></div>
+              <div className="form-group"><label>最大灵力</label><input type="number" value={userForm.maxMp} onChange={e => setUserForm({ ...userForm, maxMp: e.target.value })} /></div>
+              <div className="form-group"><label>当前气血</label><input type="number" value={userForm.hp} onChange={e => setUserForm({ ...userForm, hp: e.target.value })} /></div>
+              <div className="form-group"><label>当前灵力</label><input type="number" value={userForm.mp} onChange={e => setUserForm({ ...userForm, mp: e.target.value })} /></div>
+            </div>
+            <div className="modal-actions">
+              <button className="btn-primary" onClick={() => setShowUserModal(false)}>取消</button>
+              <button className="btn-primary" onClick={saveUser}>保存</button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {resetPwdModal && (
+        <div className="modal-overlay" onClick={() => setResetPwdModal(false)}>
+          <div className="modal-card" onClick={e => e.stopPropagation()} style={{ maxWidth: '420px' }}>
+            <div className="modal-title">重置用户密码</div>
+            <div style={{ color: '#e67e22', marginBottom: '0.8rem' }}>
+              正在重置 <b>{resettingUser?.username || ''}</b> 的密码
+            </div>
+            <div className="form-group">
+              <label>新密码 *</label>
+              <input type="password" value={resetPwdValue} onChange={e => setResetPwdValue(e.target.value)} placeholder="请输入新密码" />
+            </div>
+            <div style={{ fontSize: '0.8rem', color: '#7ec8e3' }}>密码将使用 bcrypt 加密后存储</div>
+            <div className="modal-actions">
+              <button className="btn-primary" onClick={() => setResetPwdModal(false)}>取消</button>
+              <button className="btn-primary" onClick={confirmResetPwd}>确认重置</button>
             </div>
           </div>
         </div>
