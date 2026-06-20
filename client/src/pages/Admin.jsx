@@ -1,6 +1,67 @@
 import { useState, useEffect } from 'react'
 import { adminAPI } from '../api'
 
+function ItemSearchSelect({ options, value, onChange, placeholder }) {
+  const [open, setOpen] = useState(false)
+  const [keyword, setKeyword] = useState('')
+  const selected = options.find(o => String(o.value) === String(value))
+  const filtered = keyword
+    ? options.filter(o => String(o.label).toLowerCase().includes(keyword.toLowerCase()))
+    : options
+  const inputStyle = {
+    width: '100%',
+    padding: '0.5rem',
+    background: 'rgba(10,10,26,0.8)',
+    color: '#e0e0e0',
+    border: '1px solid rgba(126,200,227,0.3)',
+    borderRadius: 6,
+    boxSizing: 'border-box'
+  }
+  return (
+    <div style={{ position: 'relative', flex: 1 }}>
+      <input
+        type="text"
+        value={open ? keyword : (selected ? selected.label : '')}
+        onChange={e => setKeyword(e.target.value)}
+        onFocus={() => { setOpen(true); setKeyword('') }}
+        onBlur={() => setTimeout(() => setOpen(false), 180)}
+        placeholder={placeholder || '搜索或选择物品'}
+        style={inputStyle}
+      />
+      {open && (
+        <div style={{
+          position: 'absolute', top: '100%', left: 0, right: 0,
+          maxHeight: 220, overflowY: 'auto',
+          background: '#0a0a1a',
+          border: '1px solid rgba(126,200,227,0.4)',
+          borderTop: 'none',
+          borderRadius: '0 0 6px 6px',
+          zIndex: 1000,
+          boxShadow: '0 8px 24px rgba(0,0,0,0.6)'
+        }}>
+          {filtered.length === 0 && <div style={{ padding: '0.5rem', color: '#666', fontSize: '0.85rem' }}>无匹配物品</div>}
+          {filtered.map(o => (
+            <div
+              key={o.value}
+              onMouseDown={() => { onChange(o.value); setOpen(false); setKeyword('') }}
+              style={{
+                padding: '0.5rem 0.7rem',
+                cursor: 'pointer',
+                fontSize: '0.85rem',
+                background: String(o.value) === String(value) ? 'rgba(126,200,227,0.2)' : 'transparent',
+                color: String(o.value) === String(value) ? '#7ec8e3' : '#e0e0e0',
+                borderBottom: '1px solid rgba(126,200,227,0.1)'
+              }}
+            >
+              {o.label}
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
+  )
+}
+
 const ITEM_TYPES = [
   { value: 'consumable', label: '消耗品' },
   { value: 'equipment', label: '装备' },
@@ -336,10 +397,10 @@ export default function Admin() {
   }
 
   const parseEffectToForm = (effect) => {
-    if (!effect) return { effectType: '', effectValue: 0 }
+    if (!effect) return { effectType: '', effectValue: 0, effectSaveOnFail: false }
     const e = typeof effect === 'string' ? JSON.parse(effect) : effect
-    const type = e.type || e.saveOnFail ? 'tribulation_bonus' : ''
-    const value = e.value || e.healPercent || 0
+    const type = e.type || (e.saveOnFail ? 'tribulation_bonus' : '')
+    const value = e.value ?? e.healPercent ?? 0
     return { effectType: type, effectValue: value, effectSaveOnFail: !!e.saveOnFail }
   }
 
@@ -367,7 +428,7 @@ export default function Admin() {
     setItemForm({
       name: '', type: '', sub_type: '', quality: 'common', slot: '',
       price: 0, description: '',
-      effectType: '', effectValue: 0,
+      effectType: '', effectValue: 0, effectSaveOnFail: false,
       stats: []
     })
     setShowItemModal(true)
@@ -379,7 +440,7 @@ export default function Admin() {
     setItemForm({
       name: item.name || '',
       type: item.type || '',
-      sub_type: item.sub_type || '',
+      sub_type: item.sub_type || item.subType || '',
       quality: item.quality || 'common',
       slot: item.slot || '',
       price: item.price || 0,
@@ -392,22 +453,45 @@ export default function Admin() {
     setShowItemModal(true)
   }
 
+  const changeItemType = (newType) => {
+    setItemForm({
+      ...itemForm,
+      type: newType,
+      sub_type: '',
+      slot: newType === 'equipment' ? itemForm.slot : '',
+      effectType: newType === 'consumable' ? itemForm.effectType : '',
+      effectValue: newType === 'consumable' ? itemForm.effectValue : 0,
+      effectSaveOnFail: newType === 'consumable' ? itemForm.effectSaveOnFail : false,
+      stats: (newType === 'equipment' || itemForm.stats.length > 0) ? itemForm.stats : []
+    })
+  }
+
   const saveItem = async () => {
     if (!itemForm.name || !itemForm.type) {
       showMsg('请填写物品名称和类型', 'error')
       return
     }
+    if (itemForm.type === 'equipment' && !itemForm.slot) {
+      showMsg('装备类型必须选择装备部位', 'error')
+      return
+    }
+    if (itemForm.type === 'consumable' && itemForm.effectType && (!itemForm.effectValue || itemForm.effectValue <= 0)) {
+      showMsg('已选择使用效果，请填写有效的效果数值', 'error')
+      return
+    }
     try {
+      const isConsumable = itemForm.type === 'consumable'
+      const isEquipment = itemForm.type === 'equipment'
       const data = {
         name: itemForm.name,
         type: itemForm.type,
         subType: itemForm.sub_type,
         quality: itemForm.quality,
-        slot: itemForm.slot,
+        slot: isEquipment ? itemForm.slot : null,
         price: parseInt(itemForm.price) || 0,
         description: itemForm.description,
-        effect: formEffectToObject(itemForm.effectType, itemForm.effectValue, itemForm.effectSaveOnFail),
-        stats: formStatsToObject(itemForm.stats)
+        effect: isConsumable ? formEffectToObject(itemForm.effectType, itemForm.effectValue, itemForm.effectSaveOnFail) : null,
+        stats: isEquipment ? formStatsToObject(itemForm.stats) : null
       }
       if (editingItem) {
         await adminAPI.updateItem(editingItem.id, data)
@@ -734,6 +818,10 @@ export default function Admin() {
       showMsg('请填写副本名称', 'error')
       return
     }
+    if (dungeonForm.waves.length === 0 || dungeonForm.waves.every(w => w.length === 0)) {
+      showMsg('请至少配置一波怪物', 'error')
+      return
+    }
     try {
       const data = formDungeonToData(dungeonForm)
       if (editingDungeon) {
@@ -744,7 +832,7 @@ export default function Admin() {
         showMsg('副本创建成功')
       }
       setShowDungeonModal(false)
-      loadTabData('dungeons')
+      await loadTabData('dungeons')
     } catch (err) {
       showMsg(err.message || '保存失败', 'error')
     }
@@ -1426,7 +1514,7 @@ export default function Admin() {
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.8rem' }}>
               <div className="form-group"><label>物品名称 *</label><input type="text" value={itemForm.name} onChange={e => setItemForm({ ...itemForm, name: e.target.value })} /></div>
               <div className="form-group"><label>类型 *</label>
-                <select value={itemForm.type} onChange={e => setItemForm({ ...itemForm, type: e.target.value, sub_type: '' })} style={selectStyle}>
+                <select value={itemForm.type} onChange={e => changeItemType(e.target.value)} style={selectStyle}>
                   <option value="">请选择类型</option>
                   {ITEM_TYPES.map(t => <option key={t.value} value={t.value}>{t.label}</option>)}
                 </select>
@@ -1554,9 +1642,11 @@ export default function Admin() {
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
                   {achForm.rewardItems.map((item, idx) => (
                     <div key={idx} style={{ display: 'flex', gap: '0.5rem', alignItems: 'center' }}>
-                      <input type="text" placeholder="物品ID" value={item.itemId}
-                        onChange={e => achUpdateRewardItem(idx, 'itemId', e.target.value)}
-                        style={{ flex: 1, padding: '0.5rem', background: 'rgba(10,10,26,0.8)', color: '#e0e0e0', border: '1px solid rgba(126,200,227,0.3)', borderRadius: 6 }}
+                      <ItemSearchSelect
+                        options={itemOptions}
+                        value={item.itemId}
+                        onChange={v => achUpdateRewardItem(idx, 'itemId', v)}
+                        placeholder="搜索物品名称"
                       />
                       <input type="number" placeholder="数量" value={item.quantity}
                         onChange={e => achUpdateRewardItem(idx, 'quantity', e.target.value)}
@@ -1733,10 +1823,12 @@ export default function Admin() {
                 {dungeonForm.firstClearItems.length === 0 && <div style={{ color: '#666', fontStyle: 'italic', fontSize: '0.85rem' }}>暂无道具奖励</div>}
                 {dungeonForm.firstClearItems.map((item, idx) => (
                   <div key={idx} style={{ display: 'flex', gap: '0.5rem', alignItems: 'center', marginBottom: '0.3rem' }}>
-                    <select value={item.itemId} onChange={e => updateRewardItem('firstClearItems', idx, 'itemId', e.target.value)} style={selectStyle}>
-                      <option value="">选择物品</option>
-                      {itemOptions.map(o => <option key={o.value} value={o.value}>{o.label}</option>)}
-                    </select>
+                    <ItemSearchSelect
+                      options={itemOptions}
+                      value={item.itemId}
+                      onChange={v => updateRewardItem('firstClearItems', idx, 'itemId', v)}
+                      placeholder="搜索物品名称"
+                    />
                     <input type="number" placeholder="数量" value={item.quantity} onChange={e => updateRewardItem('firstClearItems', idx, 'quantity', e.target.value)} style={{ width: '80px', padding: '0.5rem', background: 'rgba(10,10,26,0.8)', color: '#e0e0e0', border: '1px solid rgba(126,200,227,0.3)', borderRadius: 6 }} />
                     <button onClick={() => removeRewardItem('firstClearItems', idx)} style={{ padding: '0.5rem 0.8rem', background: '#c0392b', color: '#fff', border: 'none', borderRadius: 6, cursor: 'pointer' }}>删除</button>
                   </div>
@@ -1758,10 +1850,12 @@ export default function Admin() {
                 {dungeonForm.clearItems.length === 0 && <div style={{ color: '#666', fontStyle: 'italic', fontSize: '0.85rem' }}>暂无道具奖励</div>}
                 {dungeonForm.clearItems.map((item, idx) => (
                   <div key={idx} style={{ display: 'flex', gap: '0.5rem', alignItems: 'center', marginBottom: '0.3rem' }}>
-                    <select value={item.itemId} onChange={e => updateRewardItem('clearItems', idx, 'itemId', e.target.value)} style={selectStyle}>
-                      <option value="">选择物品</option>
-                      {itemOptions.map(o => <option key={o.value} value={o.value}>{o.label}</option>)}
-                    </select>
+                    <ItemSearchSelect
+                      options={itemOptions}
+                      value={item.itemId}
+                      onChange={v => updateRewardItem('clearItems', idx, 'itemId', v)}
+                      placeholder="搜索物品名称"
+                    />
                     <input type="number" placeholder="数量" value={item.quantity} onChange={e => updateRewardItem('clearItems', idx, 'quantity', e.target.value)} style={{ width: '80px', padding: '0.5rem', background: 'rgba(10,10,26,0.8)', color: '#e0e0e0', border: '1px solid rgba(126,200,227,0.3)', borderRadius: 6 }} />
                     <button onClick={() => removeRewardItem('clearItems', idx)} style={{ padding: '0.5rem 0.8rem', background: '#c0392b', color: '#fff', border: 'none', borderRadius: 6, cursor: 'pointer' }}>删除</button>
                   </div>
@@ -1854,10 +1948,12 @@ export default function Admin() {
               )}
               {rewardForm.items.map((item, idx) => (
                 <div key={idx} style={{ display: 'flex', gap: '0.5rem', alignItems: 'center', marginBottom: '0.5rem' }}>
-                  <select value={item.itemId} onChange={e => updateRewardSigItem(idx, 'itemId', e.target.value)} style={{ ...selectStyle, flex: 1 }}>
-                    <option value="">请选择物品</option>
-                    {itemOptions.map(o => <option key={o.value} value={o.value}>{o.label}</option>)}
-                  </select>
+                  <ItemSearchSelect
+                    options={itemOptions}
+                    value={item.itemId}
+                    onChange={v => updateRewardSigItem(idx, 'itemId', v)}
+                    placeholder="搜索物品名称"
+                  />
                   <input type="number" placeholder="数量" value={item.quantity} onChange={e => updateRewardSigItem(idx, 'quantity', e.target.value)} style={{ width: '100px', padding: '0.5rem', background: 'rgba(10,10,26,0.8)', color: '#e0e0e0', border: '1px solid rgba(126,200,227,0.3)', borderRadius: 6 }} />
                   <button onClick={() => removeRewardSigItem(idx)} style={{ padding: '0.5rem 0.8rem', background: '#c0392b', color: '#fff', border: 'none', borderRadius: 6, cursor: 'pointer' }}>删除</button>
                 </div>

@@ -76,6 +76,14 @@ router.post('/items', adminAuth, (req, res) => {
     return res.status(400).json({ error: '物品名称和类型不能为空' });
   }
 
+  const validTypes = ['consumable', 'equipment', 'material', 'quest', 'treasure'];
+  if (!validTypes.includes(type)) {
+    return res.status(400).json({ error: '物品类型不合法' });
+  }
+
+  const cleanEffect = type === 'consumable' ? (effect || null) : null;
+  const cleanSlot = type === 'equipment' ? (slot || null) : null;
+
   const result = db.prepare(`
     INSERT INTO items (name, type, sub_type, quality, slot, description, effect, stats, price)
     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
@@ -84,9 +92,9 @@ router.post('/items', adminAuth, (req, res) => {
     type,
     subType ?? null,
     quality ?? null,
-    slot ?? null,
+    cleanSlot,
     description ?? null,
-    effect ? JSON.stringify(effect) : null,
+    cleanEffect ? JSON.stringify(cleanEffect) : null,
     stats ? JSON.stringify(stats) : null,
     price ?? 0
   );
@@ -108,6 +116,18 @@ router.put('/items/:id', adminAuth, (req, res) => {
     return res.status(404).json({ error: '物品不存在' });
   }
 
+  if (!name || !type) {
+    return res.status(400).json({ error: '物品名称和类型不能为空' });
+  }
+
+  const validTypes = ['consumable', 'equipment', 'material', 'quest', 'treasure'];
+  if (!validTypes.includes(type)) {
+    return res.status(400).json({ error: '物品类型不合法' });
+  }
+
+  const cleanEffect = type === 'consumable' ? (effect || null) : null;
+  const cleanSlot = type === 'equipment' ? (slot || null) : null;
+
   db.prepare(`
     UPDATE items SET name = ?, type = ?, sub_type = ?, quality = ?, slot = ?, description = ?, effect = ?, stats = ?, price = ?
     WHERE id = ?
@@ -116,9 +136,9 @@ router.put('/items/:id', adminAuth, (req, res) => {
     type,
     subType ?? null,
     quality ?? null,
-    slot ?? null,
+    cleanSlot,
     description ?? null,
-    effect ? JSON.stringify(effect) : null,
+    cleanEffect ? JSON.stringify(cleanEffect) : null,
     stats ? JSON.stringify(stats) : null,
     price ?? 0,
     id
@@ -411,9 +431,12 @@ router.get('/dungeons', adminAuth, (req, res) => {
 router.post('/dungeons', adminAuth, (req, res) => {
   const { name, description, levelReq, realmReq, dailyLimit, monsters, firstClearRewards, clearRewards, icon, sortOrder } = req.body;
   if (!name) return res.status(400).json({ error: '副本名称不能为空' });
+  if (!Array.isArray(monsters) || monsters.length === 0 || monsters.every(w => !Array.isArray(w) || w.length === 0)) {
+    return res.status(400).json({ error: '请至少配置一波怪物' });
+  }
 
   const level_req = levelReq;
-  const realm_req = realmReq;
+  const realm_req = realmReq || null;
   const daily_limit = dailyLimit;
   const first_clear_rewards = firstClearRewards;
   const clear_rewards = clearRewards;
@@ -423,9 +446,9 @@ router.post('/dungeons', adminAuth, (req, res) => {
     INSERT INTO dungeons (name, description, level_req, realm_req, daily_limit, monsters, first_clear_rewards, clear_rewards, icon, sort_order)
     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
   `).run(
-    name, description ?? null, level_req ?? 1, realm_req ?? null,
+    name, description ?? null, level_req ?? 1, realm_req,
     daily_limit ?? 3,
-    monsters ? JSON.stringify(monsters) : '[]',
+    JSON.stringify(monsters),
     first_clear_rewards ? JSON.stringify(first_clear_rewards) : null,
     clear_rewards ? JSON.stringify(clear_rewards) : null,
     icon ?? null, sort_order ?? 0
@@ -447,9 +470,13 @@ router.put('/dungeons/:id', adminAuth, (req, res) => {
   const { name, description, levelReq, realmReq, dailyLimit, monsters, firstClearRewards, clearRewards, icon, sortOrder } = req.body;
   const existing = db.prepare('SELECT id FROM dungeons WHERE id = ?').get(id);
   if (!existing) return res.status(404).json({ error: '副本不存在' });
+  if (!name) return res.status(400).json({ error: '副本名称不能为空' });
+  if (!Array.isArray(monsters) || monsters.length === 0 || monsters.every(w => !Array.isArray(w) || w.length === 0)) {
+    return res.status(400).json({ error: '请至少配置一波怪物' });
+  }
 
   const level_req = levelReq;
-  const realm_req = realmReq;
+  const realm_req = realmReq || null;
   const daily_limit = dailyLimit;
   const first_clear_rewards = firstClearRewards;
   const clear_rewards = clearRewards;
@@ -459,9 +486,9 @@ router.put('/dungeons/:id', adminAuth, (req, res) => {
     UPDATE dungeons SET name = ?, description = ?, level_req = ?, realm_req = ?, daily_limit = ?, monsters = ?, first_clear_rewards = ?, clear_rewards = ?, icon = ?, sort_order = ?
     WHERE id = ?
   `).run(
-    name, description ?? null, level_req ?? 1, realm_req ?? null,
+    name, description ?? null, level_req ?? 1, realm_req,
     daily_limit ?? 3,
-    monsters ? JSON.stringify(monsters) : '[]',
+    JSON.stringify(monsters),
     first_clear_rewards ? JSON.stringify(first_clear_rewards) : null,
     clear_rewards ? JSON.stringify(clear_rewards) : null,
     icon ?? null, sort_order ?? 0, id
