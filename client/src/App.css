@@ -1864,6 +1864,64 @@ body {
   margin-bottom: 0.3rem;
 }
 
+.achievement-type-tabs {
+  display: flex;
+  gap: 0.6rem;
+  flex-wrap: wrap;
+}
+
+.achievement-type-tab {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  padding: 0.6rem 1rem;
+  background: rgba(10, 10, 26, 0.6);
+  border: 1px solid rgba(126, 200, 227, 0.2);
+  border-radius: 8px;
+  color: var(--color-text-dim);
+  font-family: inherit;
+  font-size: 0.9rem;
+  cursor: pointer;
+  transition: all 0.3s;
+}
+
+.achievement-type-tab:hover {
+  border-color: var(--color-blue);
+  color: var(--color-text);
+  background: rgba(126, 200, 227, 0.08);
+}
+
+.achievement-type-tab.active {
+  background: linear-gradient(135deg, rgba(212, 175, 55, 0.2), rgba(240, 216, 120, 0.1));
+  border-color: var(--color-gold);
+  color: var(--color-gold);
+  font-weight: 600;
+}
+
+.achievement-type-tab .type-icon {
+  font-size: 1.1rem;
+}
+
+.achievement-type-tab .type-progress {
+  font-size: 0.75rem;
+  background: rgba(10, 10, 26, 0.8);
+  padding: 0.1rem 0.5rem;
+  border-radius: 10px;
+  color: var(--color-text-dim);
+}
+
+.achievement-type-tab.active .type-progress {
+  background: rgba(0, 0, 0, 0.3);
+  color: var(--color-gold-light);
+}
+
+.card-title-sub {
+  font-size: 0.85rem;
+  color: var(--color-text-dim);
+  font-weight: 400;
+  margin-left: 0.5rem;
+}
+
 .claimed-titles {
   margin-top: 1rem;
   padding-top: 1rem;
@@ -2150,6 +2208,87 @@ body {
   background: var(--color-gold);
 }
 
+.legend-dot.future {
+  background: var(--color-text-dim);
+}
+
+.month-tabs {
+  display: flex;
+  gap: 0.5rem;
+  margin-bottom: 1rem;
+  flex-wrap: wrap;
+}
+
+.month-tab {
+  padding: 0.5rem 1.2rem;
+  background: rgba(10, 10, 26, 0.6);
+  border: 1px solid rgba(126, 200, 227, 0.2);
+  border-radius: 6px;
+  color: var(--color-text-dim);
+  font-family: inherit;
+  font-size: 0.9rem;
+  cursor: pointer;
+  transition: all 0.3s;
+}
+
+.month-tab:hover {
+  border-color: var(--color-blue);
+  color: var(--color-text);
+}
+
+.month-tab.active {
+  background: linear-gradient(135deg, var(--color-gold), #b8962e);
+  color: #0a0a1a;
+  border-color: var(--color-gold);
+  font-weight: 700;
+}
+
+.calendar-weekdays {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  gap: 0.5rem;
+  margin-bottom: 0.5rem;
+}
+
+.weekday {
+  text-align: center;
+  padding: 0.3rem;
+  color: var(--color-gold);
+  font-size: 0.85rem;
+  font-weight: 600;
+}
+
+.signin-calendar.monthly {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  gap: 0.4rem;
+  margin-bottom: 1rem;
+}
+
+.signin-calendar.monthly .calendar-day.empty {
+  background: transparent;
+  border: none;
+  cursor: default;
+  aspect-ratio: 1;
+}
+
+.signin-calendar.monthly .calendar-day {
+  aspect-ratio: 1;
+  padding: 0.3rem;
+  font-size: 0.85rem;
+}
+
+.calendar-day.future {
+  opacity: 0.35;
+  cursor: not-allowed;
+}
+
+.calendar-day.future:hover {
+  transform: none;
+  background: rgba(10, 10, 26, 0.6);
+  border-color: rgba(126, 200, 227, 0.15);
+}
+
 .message {
   padding: 0.8rem 1rem;
   background: rgba(46, 204, 113, 0.1);
@@ -2196,6 +2335,18 @@ body {
     padding: 0.8rem 0.5rem;
   }
 
+  .achievement-type-tabs {
+    gap: 0.4rem;
+  }
+
+  .achievement-type-tab {
+    padding: 0.5rem 0.8rem;
+    font-size: 0.8rem;
+    flex: 1;
+    min-width: calc(50% - 0.4rem);
+    justify-content: center;
+  }
+
   .achievement-item {
     flex-direction: column;
     text-align: center;
@@ -2215,12 +2366,36 @@ body {
     grid-template-columns: repeat(2, 1fr);
   }
 
+  .month-tabs {
+    gap: 0.3rem;
+  }
+
+  .month-tab {
+    padding: 0.4rem 0.8rem;
+    font-size: 0.8rem;
+    flex: 1;
+    min-width: auto;
+    text-align: center;
+  }
+
   .signin-calendar {
     gap: 0.3rem;
   }
 
   .calendar-day {
     font-size: 0.75rem;
+  }
+
+  .calendar-weekdays {
+    gap: 0.3rem;
+  }
+
+  .weekday {
+    font-size: 0.75rem;
+  }
+
+  .signin-calendar.monthly {
+    gap: 0.25rem;
   }
 }
 

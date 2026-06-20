@@ -1,11 +1,14 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useMemo } from 'react'
 import { signInAPI } from '../api'
+
+const WEEKDAYS = ['日', '一', '二', '三', '四', '五', '六']
 
 export default function SignIn() {
   const [signInInfo, setSignInInfo] = useState(null)
   const [loading, setLoading] = useState(true)
   const [message, setMessage] = useState('')
   const [signing, setSigning] = useState(false)
+  const [currentMonthIndex, setCurrentMonthIndex] = useState(0)
 
   const loadInfo = () => {
     setLoading(true)
@@ -65,19 +68,68 @@ export default function SignIn() {
     return signInInfo.signInRecords.map((r) => r.sign_date)
   }
 
-  const getCalendarDays = () => {
-    const days = []
+  const monthInfoList = useMemo(() => {
+    const months = []
     const today = new Date()
-    for (let i = 29; i >= 0; i--) {
-      const date = new Date(today)
-      date.setDate(date.getDate() - i)
-      const dateStr = date.toISOString().split('T')[0]
-      const isToday = i === 0
-      const signed = getSignInDays().includes(dateStr)
-      const isPast = i > 0
-      const canMakeup = isPast && !signed
-      days.push({ date: dateStr, isToday, signed, canMakeup, day: date.getDate() })
+    for (let i = 0; i < 3; i++) {
+      const d = new Date(today.getFullYear(), today.getMonth() - i, 1)
+      months.push({
+        year: d.getFullYear(),
+        month: d.getMonth(),
+        label: `${d.getFullYear()}年${d.getMonth() + 1}月`
+      })
     }
+    return months
+  }, [])
+
+  const getCalendarDays = (year, month) => {
+    const days = []
+    const signDays = getSignInDays()
+    const makeupDaysLimit = signInInfo?.makeupDaysLimit || 90
+
+    const firstDay = new Date(year, month, 1)
+    const lastDay = new Date(year, month + 1, 0)
+    const totalDays = lastDay.getDate()
+    const firstWeekday = firstDay.getDay()
+
+    const today = new Date()
+    today.setHours(0, 0, 0, 0)
+
+    const limitDate = new Date(today)
+    limitDate.setDate(limitDate.getDate() - makeupDaysLimit)
+    limitDate.setHours(0, 0, 0, 0)
+
+    for (let i = 0; i < firstWeekday; i++) {
+      days.push({ empty: true, key: `empty-${i}` })
+    }
+
+    for (let day = 1; day <= totalDays; day++) {
+      const dateObj = new Date(year, month, day)
+      dateObj.setHours(0, 0, 0, 0)
+      const dateStr = `${year}-${String(month + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`
+
+      const diffTime = today - dateObj
+      const diffDays = Math.floor(diffTime / (1000 * 60 * 60 * 24))
+
+      const isToday = diffDays === 0
+      const signed = signDays.includes(dateStr)
+      const isPast = diffDays > 0
+      const isFuture = diffDays < 0
+      const withinMakeupLimit = dateObj >= limitDate && isPast
+      const canMakeup = withinMakeupLimit && !signed
+
+      days.push({
+        date: dateStr,
+        isToday,
+        signed,
+        canMakeup,
+        day,
+        isFuture,
+        isPast,
+        key: dateStr
+      })
+    }
+
     return days
   }
 
@@ -95,7 +147,8 @@ export default function SignIn() {
   if (loading) return <div className="loading-screen">加载中...</div>
   if (!signInInfo) return <div className="card">加载失败</div>
 
-  const calendarDays = getCalendarDays()
+  const currentMonth = monthInfoList[currentMonthIndex]
+  const calendarDays = getCalendarDays(currentMonth.year, currentMonth.month)
 
   return (
     <div className="signin-page">
@@ -153,24 +206,48 @@ export default function SignIn() {
       </div>
 
       <div className="card">
-        <div className="card-title">签到日历（近30天）</div>
-        <div className="signin-calendar">
-          {calendarDays.map((day) => (
-            <div
-              key={day.date}
-              className={`calendar-day ${day.isToday ? 'today' : ''} ${day.signed ? 'signed' : ''} ${day.canMakeup ? 'can-makeup' : ''}`}
-              onClick={() => day.canMakeup && handleMakeup(day.date)}
-              title={day.canMakeup ? `点击补签 ${day.date}` : day.date}
+        <div className="card-title">签到日历（最近三个月）</div>
+
+        <div className="month-tabs">
+          {monthInfoList.map((m, idx) => (
+            <button
+              key={idx}
+              className={`month-tab ${currentMonthIndex === idx ? 'active' : ''}`}
+              onClick={() => setCurrentMonthIndex(idx)}
             >
-              <span className="day-number">{day.day}</span>
-              {day.signed && <span className="day-mark">✓</span>}
-            </div>
+              {m.label}
+            </button>
+          ))}
+        </div>
+
+        <div className="calendar-weekdays">
+          {WEEKDAYS.map((w) => (
+            <div key={w} className="weekday">{w}</div>
+          ))}
+        </div>
+
+        <div className="signin-calendar monthly">
+          {calendarDays.map((day) => (
+            day.empty ? (
+              <div key={day.key} className="calendar-day empty" />
+            ) : (
+              <div
+                key={day.key}
+                className={`calendar-day ${day.isToday ? 'today' : ''} ${day.signed ? 'signed' : ''} ${day.canMakeup ? 'can-makeup' : ''} ${day.isFuture ? 'future' : ''}`}
+                onClick={() => day.canMakeup && handleMakeup(day.date)}
+                title={day.canMakeup ? `点击补签 ${day.date}` : day.date}
+              >
+                <span className="day-number">{day.day}</span>
+                {day.signed && <span className="day-mark">✓</span>}
+              </div>
+            )
           ))}
         </div>
         <div className="calendar-legend">
           <span><i className="legend-dot signed"></i>已签到</span>
           <span><i className="legend-dot makeup"></i>可补签</span>
           <span><i className="legend-dot today"></i>今天</span>
+          <span><i className="legend-dot future"></i>未来</span>
         </div>
       </div>
     </div>

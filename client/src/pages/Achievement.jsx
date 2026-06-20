@@ -1,18 +1,28 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useMemo } from 'react'
 import { achievementAPI } from '../api'
+
+const ALL_TYPES = {
+  type: 'all',
+  name: '全部',
+  icon: '🏆'
+}
 
 export default function Achievement() {
   const [achievements, setAchievements] = useState([])
+  const [types, setTypes] = useState([])
   const [stats, setStats] = useState({ total: 0, completed: 0, claimed: 0 })
   const [claimedTitles, setClaimedTitles] = useState([])
   const [loading, setLoading] = useState(true)
   const [message, setMessage] = useState('')
+  const [activeType, setActiveType] = useState('all')
+  const [claiming, setClaiming] = useState(null)
 
   const loadAchievements = () => {
     setLoading(true)
     achievementAPI.getAchievements()
       .then((data) => {
         setAchievements(data.achievements || [])
+        setTypes(data.types || [])
         setStats(data.stats || { total: 0, completed: 0, claimed: 0 })
         setClaimedTitles(data.claimedTitles || [])
       })
@@ -27,6 +37,8 @@ export default function Achievement() {
   }, [])
 
   const handleClaim = (achievementId) => {
+    if (claiming) return
+    setClaiming(achievementId)
     achievementAPI.claimReward(achievementId)
       .then((data) => {
         setMessage(data.message || '领取成功！')
@@ -37,6 +49,7 @@ export default function Achievement() {
         setMessage(err.message || '领取失败')
         setTimeout(() => setMessage(''), 3000)
       })
+      .finally(() => setClaiming(null))
   }
 
   const formatRewards = (rewards, ach) => {
@@ -68,6 +81,25 @@ export default function Achievement() {
     return `${ach.progress} / ${ach.target_value}`
   }
 
+  const displayAchievements = useMemo(() => {
+    if (activeType === 'all') return achievements
+    return achievements.filter(ach => ach.type === activeType)
+  }, [achievements, activeType])
+
+  const typeStats = useMemo(() => {
+    const list = [ALL_TYPES, ...types]
+    return list.map(t => {
+      if (t.type === 'all') {
+        return {
+          ...t,
+          total: stats.total,
+          completed: stats.completed
+        }
+      }
+      return t
+    })
+  }, [types, stats])
+
   if (loading) return <div className="loading-screen">加载中...</div>
 
   return (
@@ -75,7 +107,7 @@ export default function Achievement() {
       <div className="card">
         <div className="card-title">成就系统</div>
         {message && <div className="message">{message}</div>}
-        
+
         <div className="achievement-stats">
           <div className="stat-item">
             <div className="stat-value">{stats.completed}/{stats.total}</div>
@@ -104,51 +136,84 @@ export default function Achievement() {
       </div>
 
       <div className="card">
-        <div className="card-title">成就列表</div>
-        <div className="achievement-list">
-          {achievements.map((ach) => (
-            <div
-              key={ach.id}
-              className={`achievement-item ${ach.completed ? 'completed' : ''} ${ach.claimed ? 'claimed' : ''}`}
+        <div className="card-title">成就分类</div>
+        <div className="achievement-type-tabs">
+          {typeStats.map((t) => (
+            <button
+              key={t.type}
+              className={`achievement-type-tab ${activeType === t.type ? 'active' : ''}`}
+              onClick={() => setActiveType(t.type)}
             >
-              <div className="achievement-icon">{ach.icon || '🏆'}</div>
-              <div className="achievement-info">
-                <div className="achievement-name">
-                  {ach.name}
-                  {ach.title && <span className="achievement-title">「{ach.title}」</span>}
-                </div>
-                <div className="achievement-desc">{ach.description}</div>
-                <div className="achievement-progress">
-                  <div className="progress-bar small">
-                    <div
-                      className="progress-fill"
-                      style={{ width: `${Math.min((ach.progress / ach.target_value) * 100, 100)}%` }}
-                    />
-                  </div>
-                  <span className="progress-text">
-                    {formatProgressText(ach)}
-                  </span>
-                </div>
-                <div className="achievement-rewards">
-                  奖励：{formatRewards(ach.rewards, ach)}
-                </div>
-              </div>
-              <div className="achievement-action">
-                {ach.claimed ? (
-                  <span className="status-text claimed">已领取</span>
-                ) : ach.completed ? (
-                  <button
-                    className="btn-primary"
-                    onClick={() => handleClaim(ach.id)}
-                  >
-                    领取奖励
-                  </button>
-                ) : (
-                  <span className="status-text">未完成</span>
-                )}
-              </div>
-            </div>
+              <span className="type-icon">{t.icon}</span>
+              <span className="type-name">{t.name}</span>
+              {t.type !== 'all' && (
+                <span className="type-progress">
+                  {t.completed}/{t.total}
+                </span>
+              )}
+            </button>
           ))}
+        </div>
+      </div>
+
+      <div className="card">
+        <div className="card-title">
+          成就列表
+          {activeType !== 'all' && (
+            <span className="card-title-sub">
+              （{typeStats.find(t => t.type === activeType)?.name || ''}）
+            </span>
+          )}
+        </div>
+        <div className="achievement-list">
+          {displayAchievements.length === 0 ? (
+            <div className="empty-state">暂无成就</div>
+          ) : (
+            displayAchievements.map((ach) => (
+              <div
+                key={ach.id}
+                className={`achievement-item ${ach.completed ? 'completed' : ''} ${ach.claimed ? 'claimed' : ''}`}
+              >
+                <div className="achievement-icon">{ach.icon || '🏆'}</div>
+                <div className="achievement-info">
+                  <div className="achievement-name">
+                    {ach.name}
+                    {ach.title && <span className="achievement-title">「{ach.title}」</span>}
+                  </div>
+                  <div className="achievement-desc">{ach.description}</div>
+                  <div className="achievement-progress">
+                    <div className="progress-bar small">
+                      <div
+                        className="progress-fill"
+                        style={{ width: `${Math.min((ach.progress / ach.target_value) * 100, 100)}%` }}
+                      />
+                    </div>
+                    <span className="progress-text">
+                      {formatProgressText(ach)}
+                    </span>
+                  </div>
+                  <div className="achievement-rewards">
+                    奖励：{formatRewards(ach.rewards, ach)}
+                  </div>
+                </div>
+                <div className="achievement-action">
+                  {ach.claimed ? (
+                    <span className="status-text claimed">已领取</span>
+                  ) : ach.completed ? (
+                    <button
+                      className="btn-primary"
+                      onClick={() => handleClaim(ach.id)}
+                      disabled={claiming === ach.id}
+                    >
+                      {claiming === ach.id ? '领取中...' : '领取奖励'}
+                    </button>
+                  ) : (
+                    <span className="status-text">未完成</span>
+                  )}
+                </div>
+              </div>
+            ))
+          )}
         </div>
       </div>
     </div>
