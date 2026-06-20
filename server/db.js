@@ -566,7 +566,8 @@ function seedData() {
       { day_type: 'consecutive', day_number: 3, rewards: JSON.stringify({ gold: 100, exp: 50, items: [{ itemId: 1, quantity: 2 }] }), sort_order: 2 },
       { day_type: 'consecutive', day_number: 7, rewards: JSON.stringify({ gold: 300, exp: 150, items: [{ itemId: 3, quantity: 3 }] }), sort_order: 3 },
       { day_type: 'consecutive', day_number: 15, rewards: JSON.stringify({ gold: 800, exp: 400, items: [{ itemId: 5, quantity: 2 }] }), sort_order: 4 },
-      { day_type: 'consecutive', day_number: 30, rewards: JSON.stringify({ gold: 2000, exp: 1000, items: [{ itemId: 102, quantity: 1 }] }), sort_order: 5 }
+      { day_type: 'consecutive', day_number: 30, rewards: JSON.stringify({ gold: 2000, exp: 1000, items: [{ itemId: 102, quantity: 1 }] }), sort_order: 5 },
+      { day_type: 'makeup', day_number: 1, rewards: JSON.stringify({ gold: 100 }), sort_order: 0 }
     ];
 
     const insertReward = db.prepare(`
@@ -581,6 +582,14 @@ function seedData() {
     });
 
     insertMany(defaultSignInRewards);
+  } else {
+    const makeupReward = db.prepare('SELECT * FROM sign_in_rewards WHERE day_type = ?').get('makeup');
+    if (!makeupReward) {
+      db.prepare(`
+        INSERT INTO sign_in_rewards (day_type, day_number, rewards, sort_order)
+        VALUES (?, ?, ?, ?)
+      `).run('makeup', 1, JSON.stringify({ gold: 100 }), 0);
+    }
   }
 
   const skillCount = db.prepare('SELECT COUNT(*) as count FROM skills').get().count;

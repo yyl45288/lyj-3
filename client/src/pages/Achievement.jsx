@@ -82,21 +82,27 @@ export default function Achievement() {
   }
 
   const displayAchievements = useMemo(() => {
-    if (activeType === 'all') return achievements
-    return achievements.filter(ach => ach.type === activeType)
+    const safeAchievements = Array.isArray(achievements) ? achievements : []
+    if (!activeType || activeType === 'all') return safeAchievements
+    return safeAchievements.filter(ach => ach && ach.type === activeType)
   }, [achievements, activeType])
 
   const typeStats = useMemo(() => {
-    const list = [ALL_TYPES, ...types]
+    const safeTypes = Array.isArray(types) ? types : []
+    const list = [ALL_TYPES, ...safeTypes]
     return list.map(t => {
       if (t.type === 'all') {
         return {
           ...t,
-          total: stats.total,
-          completed: stats.completed
+          total: stats?.total ?? 0,
+          completed: stats?.completed ?? 0
         }
       }
-      return t
+      return {
+        ...t,
+        total: t?.total ?? 0,
+        completed: t?.completed ?? 0
+      }
     })
   }, [types, stats])
 

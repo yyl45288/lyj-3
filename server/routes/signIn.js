@@ -93,13 +93,19 @@ router.get('/info', auth, (req, res) => {
       canClaim: false
     }));
 
+    const makeupReward = db.prepare(
+      "SELECT * FROM sign_in_rewards WHERE day_type = 'makeup' ORDER BY sort_order LIMIT 1"
+    ).get();
+    const makeupCost = makeupReward && makeupReward.rewards
+      ? (JSON.parse(makeupReward.rewards).gold || 100)
+      : 100;
+
     const lastThreeMonthsRecords = db.prepare(`
       SELECT sign_date, is_makeup FROM sign_in_records
       WHERE character_id = ? AND sign_date >= date('now', '-3 months')
       ORDER BY sign_date
     `).all(character.id);
 
-    const makeupCost = 100;
     const makeupDaysLimit = 90;
 
     res.json({
@@ -350,7 +356,13 @@ router.post('/makeup', auth, (req, res) => {
       return res.status(400).json({ error: '该日期已签到' });
     }
 
-    const makeupCost = 100;
+    const makeupReward = db.prepare(
+      "SELECT * FROM sign_in_rewards WHERE day_type = 'makeup' ORDER BY sort_order LIMIT 1"
+    ).get();
+    const makeupCost = makeupReward && makeupReward.rewards
+      ? (JSON.parse(makeupReward.rewards).gold || 100)
+      : 100;
+
     if (character.gold < makeupCost) {
       return res.status(400).json({ error: `金币不足，补签需要${makeupCost}金币` });
     }

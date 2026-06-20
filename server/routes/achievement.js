@@ -16,6 +16,8 @@ const ACHIEVEMENT_TYPE_MAP = {
   quest_complete: { name: '任务', icon: '📜' }
 };
 
+const DEFAULT_ACHIEVEMENT_TYPES = ['cultivate', 'combat', 'realm', 'gold', 'sign_in', 'consecutive_sign_in', 'pet_catch', 'quest_complete'];
+
 router.get('/', auth, (req, res) => {
   try {
     const character = db.prepare('SELECT * FROM characters WHERE user_id = ?').get(req.user.id);
@@ -60,7 +62,12 @@ router.get('/', auth, (req, res) => {
       .filter(a => a.claimed && a.title)
       .map(a => a.title);
 
-    const types = [...new Set(achievements.map(a => a.type))].map(type => ({
+    let typesFromDb = achievements.length > 0 ? [...new Set(achievements.map(a => a.type))] : [];
+    if (typesFromDb.length === 0) {
+      typesFromDb = DEFAULT_ACHIEVEMENT_TYPES;
+    }
+
+    const types = typesFromDb.map(type => ({
       type,
       name: ACHIEVEMENT_TYPE_MAP[type]?.name || type,
       icon: ACHIEVEMENT_TYPE_MAP[type]?.icon || '🏆',
