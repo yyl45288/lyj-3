@@ -18,6 +18,7 @@
   --color-text-dim: #8888aa;
   --color-danger: #e74c3c;
   --color-success: #2ecc71;
+  --color-info: #3498db;
   --border-glow: rgba(212, 175, 55, 0.3);
   --quality-common: #cccccc;
   --quality-uncommon: #1eff00;
@@ -245,6 +246,44 @@ body {
   letter-spacing: 2px;
   border-bottom: 1px solid var(--border-glow);
   padding-bottom: 0.5rem;
+}
+
+.message-bar {
+  padding: 0.8rem 1.2rem;
+  border-radius: 6px;
+  margin-bottom: 1rem;
+  font-size: 0.95rem;
+  text-align: center;
+  animation: slideDown 0.3s ease-out;
+}
+
+@keyframes slideDown {
+  from {
+    opacity: 0;
+    transform: translateY(-10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.message-bar.success {
+  background: rgba(76, 175, 80, 0.15);
+  border: 1px solid rgba(76, 175, 80, 0.4);
+  color: var(--color-success);
+}
+
+.message-bar.error {
+  background: rgba(244, 67, 54, 0.15);
+  border: 1px solid rgba(244, 67, 54, 0.4);
+  color: var(--color-danger);
+}
+
+.message-bar.info {
+  background: rgba(33, 150, 243, 0.15);
+  border: 1px solid rgba(33, 150, 243, 0.4);
+  color: var(--color-info);
 }
 
 .card {
@@ -2660,6 +2699,21 @@ body {
   opacity: 0.6;
 }
 
+.friend-item.clickable {
+  cursor: pointer;
+}
+
+.friend-item.clickable:hover {
+  transform: translateX(4px);
+  border-color: rgba(212, 175, 55, 0.4);
+}
+
+.friend-avatar.large {
+  width: 64px;
+  height: 64px;
+  font-size: 1.8rem;
+}
+
 .friend-avatar {
   width: 45px;
   height: 45px;
@@ -2950,6 +3004,106 @@ body {
 .afk-config-item input:focus {
   outline: none;
   border-color: var(--color-gold);
+}
+
+.friend-detail-modal .modal-content {
+  max-width: 400px;
+}
+
+.friend-detail-header {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  margin-bottom: 1.5rem;
+  padding-bottom: 1rem;
+  border-bottom: 1px solid rgba(126, 200, 227, 0.2);
+}
+
+.friend-detail-info {
+  flex: 1;
+}
+
+.friend-detail-name {
+  font-size: 1.3rem;
+  font-weight: 700;
+  color: var(--color-text);
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin-bottom: 0.3rem;
+}
+
+.friend-detail-status {
+  font-size: 0.9rem;
+  color: var(--color-text-dim);
+}
+
+.friend-detail-stats {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 1rem;
+  margin-bottom: 1.5rem;
+}
+
+.friend-detail-stats .stat-item {
+  background: rgba(10, 10, 26, 0.5);
+  padding: 1rem;
+  border-radius: 8px;
+  text-align: center;
+  border: 1px solid rgba(126, 200, 227, 0.15);
+}
+
+.friend-detail-stats .stat-label {
+  font-size: 0.85rem;
+  color: var(--color-text-dim);
+  margin-bottom: 0.3rem;
+}
+
+.friend-detail-stats .stat-value {
+  font-size: 1.1rem;
+  font-weight: 700;
+  color: var(--color-gold);
+}
+
+.friend-detail-info-section {
+  background: rgba(10, 10, 26, 0.3);
+  padding: 1rem;
+  border-radius: 8px;
+  margin-bottom: 1rem;
+}
+
+.friend-detail-info-section .info-row {
+  display: flex;
+  justify-content: space-between;
+  padding: 0.5rem 0;
+}
+
+.friend-detail-info-section .info-label {
+  color: var(--color-text-dim);
+  font-size: 0.9rem;
+}
+
+.friend-detail-info-section .info-value {
+  color: var(--color-text);
+  font-size: 0.9rem;
+  font-weight: 500;
+}
+
+.btn-danger {
+  padding: 0.5rem 1rem;
+  background: rgba(231, 76, 60, 0.2);
+  color: var(--color-danger);
+  border: 1px solid rgba(231, 76, 60, 0.4);
+  border-radius: 4px;
+  font-family: inherit;
+  font-size: 0.9rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.3s;
+}
+
+.btn-danger:hover {
+  background: rgba(231, 76, 60, 0.3);
 }
 
 @media (max-width: 768px) {

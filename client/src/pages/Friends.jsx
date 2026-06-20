@@ -13,6 +13,7 @@ export default function Friends() {
   const [showAddModal, setShowAddModal] = useState(false)
   const [addFriendName, setAddFriendName] = useState('')
   const [addFriendMessage, setAddFriendMessage] = useState('')
+  const [selectedFriend, setSelectedFriend] = useState(null)
 
   const fetchData = () => {
     Promise.all([
@@ -118,6 +119,12 @@ export default function Friends() {
     <div>
       <h1 className="page-title">好友系统</h1>
 
+      {message && (
+        <div className={`message-bar ${message.includes('成功') ? 'success' : message.includes('失败') ? 'error' : 'info'}`}>
+          {message}
+        </div>
+      )}
+
       <div className="card">
         <div className="friends-header">
           <div className="online-count">
@@ -155,7 +162,7 @@ export default function Friends() {
               <div className="friend-group">
                 <div className="group-title">在线好友 ({onlineFriends.length})</div>
                 {onlineFriends.map(friend => (
-                  <div key={friend.id} className="friend-item">
+                  <div key={friend.id} className="friend-item clickable" onClick={() => setSelectedFriend(friend)}>
                     <div className="friend-avatar online">
                       {friend.friend_name?.charAt(0) || '?'}
                     </div>
@@ -170,7 +177,7 @@ export default function Friends() {
                     </div>
                     <button
                       className="btn-delete"
-                      onClick={() => handleDeleteFriend(friend.friend_id, friend.friend_name)}
+                      onClick={(e) => { e.stopPropagation(); handleDeleteFriend(friend.friend_id, friend.friend_name); }}
                     >
                       删除
                     </button>
@@ -182,7 +189,7 @@ export default function Friends() {
               <div className="friend-group">
                 <div className="group-title">离线好友 ({offlineFriends.length})</div>
                 {offlineFriends.map(friend => (
-                  <div key={friend.id} className="friend-item offline">
+                  <div key={friend.id} className="friend-item offline clickable" onClick={() => setSelectedFriend(friend)}>
                     <div className="friend-avatar">
                       {friend.friend_name?.charAt(0) || '?'}
                     </div>
@@ -197,7 +204,7 @@ export default function Friends() {
                     </div>
                     <button
                       className="btn-delete"
-                      onClick={() => handleDeleteFriend(friend.friend_id, friend.friend_name)}
+                      onClick={(e) => { e.stopPropagation(); handleDeleteFriend(friend.friend_id, friend.friend_name); }}
                     >
                       删除
                     </button>
@@ -336,16 +343,6 @@ export default function Friends() {
             )}
           </div>
         )}
-
-        {message && (
-          <div style={{
-            marginTop: '1rem',
-            color: message.includes('成功') ? 'var(--color-success)' : message.includes('失败') ? 'var(--color-danger)' : 'var(--color-gold)',
-            fontSize: '0.95rem'
-          }}>
-            {message}
-          </div>
-        )}
       </div>
 
       {showAddModal && (
@@ -385,6 +382,67 @@ export default function Friends() {
                 disabled={loading || !addFriendName.trim()}
               >
                 {loading ? '发送中...' : '发送申请'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {selectedFriend && (
+        <div className="modal-overlay" onClick={() => setSelectedFriend(null)}>
+          <div className="modal-content friend-detail-modal" onClick={(e) => e.stopPropagation()}>
+            <div className="modal-header">
+              <h3>好友详情</h3>
+              <button className="modal-close" onClick={() => setSelectedFriend(null)}>×</button>
+            </div>
+            <div className="modal-body">
+              <div className="friend-detail-header">
+                <div className={`friend-avatar large ${selectedFriend.isOnline ? 'online' : ''}`}>
+                  {selectedFriend.friend_name?.charAt(0) || '?'}
+                </div>
+                <div className="friend-detail-info">
+                  <div className="friend-detail-name">
+                    {selectedFriend.friend_name}
+                    <span className={`status-dot ${selectedFriend.isOnline ? 'online' : ''}`} />
+                  </div>
+                  <div className="friend-detail-status">
+                    {selectedFriend.isOnline ? '当前在线' : '当前离线'}
+                  </div>
+                </div>
+              </div>
+
+              <div className="friend-detail-stats">
+                <div className="stat-item">
+                  <div className="stat-label">境界</div>
+                  <div className="stat-value">{selectedFriend.friend_realm}</div>
+                </div>
+                <div className="stat-item">
+                  <div className="stat-label">等级</div>
+                  <div className="stat-value">Lv.{selectedFriend.friend_level}</div>
+                </div>
+              </div>
+
+              <div className="friend-detail-info-section">
+                <div className="info-row">
+                  <span className="info-label">好友关系</span>
+                  <span className="info-value">
+                    {selectedFriend.created_at ? `成为好友于 ${new Date(selectedFriend.created_at).toLocaleDateString()}` : '暂无数据'}
+                  </span>
+                </div>
+              </div>
+            </div>
+            <div className="modal-footer">
+              <button className="btn-secondary" onClick={() => setSelectedFriend(null)}>
+                关闭
+              </button>
+              <button
+                className="btn-danger"
+                onClick={() => {
+                  handleDeleteFriend(selectedFriend.friend_id, selectedFriend.friend_name);
+                  setSelectedFriend(null);
+                }}
+              >
+                删除好友
               </button>
             </div>
           </div>

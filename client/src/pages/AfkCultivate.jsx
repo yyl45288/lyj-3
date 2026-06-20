@@ -166,11 +166,15 @@ export default function AfkCultivate() {
             <div className="bonus-list">
               <div className="bonus-item">
                 <span>等级加成</span>
-                <span className="bonus-value">+{((1 + (character.level - 1) * config.levelMultiplier - 1) * 100).toFixed(1)}%</span>
+                <span className="bonus-value">+{((character.level - 1) * config.levelMultiplier * 100).toFixed(1)}%</span>
               </div>
               <div className="bonus-item">
                 <span>境界加成</span>
-                <span className="bonus-value">+{((1 + (['练气期', '筑基期', '金丹期', '元婴期', '化神期', '合体期', '大乘期', '渡劫期', '仙人'].indexOf(character.realm)) * config.realmMultiplier - 1) * 100).toFixed(1)}%</span>
+                <span className="bonus-value">+{( ['练气期', '筑基期', '金丹期', '元婴期', '化神期', '合体期', '大乘期', '渡劫期', '仙人'].indexOf(character.realm) * config.realmMultiplier * 100).toFixed(1)}%</span>
+              </div>
+              <div className="bonus-item total-bonus">
+                <span>总加成</span>
+                <span className="bonus-value">+{((character.level - 1) * config.levelMultiplier * 100 +  ['练气期', '筑基期', '金丹期', '元婴期', '化神期', '合体期', '大乘期', '渡劫期', '仙人'].indexOf(character.realm) * config.realmMultiplier * 100).toFixed(1)}%</span>
               </div>
             </div>
           </div>
